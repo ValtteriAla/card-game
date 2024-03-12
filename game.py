@@ -3,6 +3,7 @@ from ttkbootstrap.constants import *
 from random import randint, choice
 import math
 
+
 class App(tb.Window):
     def __init__(self, title, size, theme='darkly', target_score=0, starting_score=100):
         '''
@@ -12,7 +13,7 @@ class App(tb.Window):
         - size: x and y dimensions of the window. This is also the minimum size
         - target_score: score that ends the game
         - starting_score: starting point at the start of the game
-        - theme: your custom theme or one of the above:\n
+        - theme(NOT IN USE): your custom theme or one of the above:\n
                   'cosmo', 'flatly', 'litera',\n
                   'minty', 'lumen', 'sandstone', 'yeti',\n
                   'pulse', 'united', 'morph', 'journal',\n
@@ -27,9 +28,13 @@ class App(tb.Window):
         self.starting_score = starting_score
         self.current_score = starting_score
 
+        self.style.configure('TButton', font=('Helvetica', 18))
+
         self.main = Main(self)
         self.mainloop()
 
+       
+    # Not used
     def change_theme(self, theme):
         self.style.theme_use(theme)
 
@@ -59,6 +64,9 @@ class Main(tb.Frame):
     def __init__(self, parent):
         '''
         # Main window
+        'Goal', 'Current Score' and 'You win' labels are on first row.
+        'Try again' button appears when game is over.
+        Buttons 1-4 are on second row in a form of a card.
         '''
         self.parent = parent
         default_button_width = 30
@@ -67,16 +75,20 @@ class Main(tb.Frame):
         self.frame.grid(column=0, row=0, sticky=N)
 
         self.win_label = Label(self.frame, (0, 0), '')
-        Label(self.frame, (1, 0), f'Goal: {self.parent.get_target_score()}')
-        self.try_again_button = tb.Button(
-            self.frame, text='Play again', command=self.play_again)
-        self.current_score = Label(self.frame, (1, 1), f'Current: {
-            self.parent.get_current_score()}')
+        goal_label = Label(self.frame, (1, 0),
+                           f'Goal: {self.parent.get_target_score()}')
+        self.try_again_button = tb.Button(self.frame,
+                                          text='Play again',
+                                          command=self.play_again)
+        self.current_score = Label(self.frame, (1, 1),
+                                   f'Current: {self.parent.get_current_score()}')
         self.card1 = self.init_card(self.frame, 2, 0, 'addition', 0)
         self.card2 = self.init_card(self.frame, 2, 1, 'subtraction', 1)
         self.card3 = self.init_card(self.frame, 2, 2, 'multiplication', 2)
         self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
 
+    # TODO:
+    # - Use reinit_card() when pressing play-again
     def play_again(self):
         self.try_again_button.grid_remove()
         self.win_label.change_label('')
@@ -87,14 +99,15 @@ class Main(tb.Frame):
         self.card3 = self.init_card(self.frame, 2, 2, 'multiplication', 2)
         self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
 
+    # Used on start and when pressing play-again
     def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
-        return CardButton(frame, (row, column), Card(card_type, card_index), customizations={'on_click': self.on_click_card})
+        return CardButton(frame, (row, column), Card(card_type, card_index),
+                          customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
 
     def reinit_card(self, card):
         card_class = card.get_card()
         card_class.reinit_card()
         card.update_text()
-        pass
 
     def on_click_card(self, card):
         print(card.get_card_text())
@@ -137,7 +150,16 @@ class Main(tb.Frame):
 
 
 class Card():
-    def __init__(self, card_type: str, index=None, min_value=1, max_value=50):
+    def __init__(self, card_type: str, index: int, min_value=1, max_value=50):
+        '''
+        # Card
+        Has stored operation type, value and index. Used in CardButton
+        ### Parameters:
+        - card_type: 'addition', 'subtraction', 'multiplication', 'division', 'round_up', 'round_down'
+        - index: Required identifier for updating this card, has to be number 0-3
+        - min_value: minimum value that this card's value can get, default=1
+        - max_value: maximum value that this card's value can get, default=50
+        '''
         self.card_type = card_type
         self.value = randint(min_value, max_value)
         self.index = index
@@ -145,6 +167,14 @@ class Card():
         self.min_value = min_value
         self.max_value = max_value
 
+        self.init_value_and_operator()
+
+    def get_card_text(self):
+        if len(self.operator) > 1:
+            return self.value
+        return f'{self.operator}{self.value}'
+
+    def init_value_and_operator(self):
         if self.card_type == 'addition':
             self.operator = '+'
         elif self.card_type == 'subtraction':
@@ -163,11 +193,6 @@ class Card():
             self.operator = 'round_down'
         else:
             print('Invalid card_type:', self.card_type)
-
-    def get_card_text(self):
-        if len(self.operator) > 1:
-            return self.value
-        return f'{self.operator}{self.value}'
 
     def get_card(self) -> dict:
         return {'value': self.value, 'index': self.index, 'operator': self.operator}
@@ -176,45 +201,43 @@ class Card():
         self.card_type = choice(['addition', 'subtraction', 'multiplication',
                                  'division', 'round_up', 'round_down'])
         self.value = randint(self.min_value, self.max_value)
-        if self.card_type == 'addition':
-            self.operator = '+'
-        elif self.card_type == 'subtraction':
-            self.operator = '-'
-        elif self.card_type == 'multiplication':
-            self.value *= choice([-1, 1])
-            self.operator = '*'
-        elif self.card_type == 'division':
-            self.value *= choice([-1, 1])
-            self.operator = '/'
-        elif self.card_type == 'round_up':
-            self.value = 'Round up'
-            self.operator = 'round_up'
-        elif self.card_type == 'round_down':
-            self.value = 'Round down'
-            self.operator = 'round_down'
-        else:
-            print('Invalid card_type:', self.card_type)
+        self.init_value_and_operator()
+
         print('Card updated', self.get_card())
 
 
 class CardButton(tb.Frame):
-    def __init__(self, parent, row_and_column: tuple, card: Card, customizations={}):
+    def __init__(self, parent, row_and_column: tuple, card: Card, customizations: {}):
         '''
+        # CardButton
+        Button widget that has appearance of a card and uses Card's properties.
+        ### Parameters:
+        - parent: parent to which this widget belongs
+        - row_and_column: as a tuple (row, column)
+        - card: Instance of a Card class
+        - customizations: default={'width': 12, 'height': 5, 'padx': 5,
+                          'style': 'Primary.TButton',
+                          'on_click': self.on_click, }
         '''
-        super().__init__(parent)
-
         self.parent = parent
 
         default_customizations = {
-            'on_click': self.on_click, 'width': 20, 'height': 10, 'padx': 10}
+            'width': 12, 'height': 5, 'padx': 5,
+            'style': 'TButton',
+            'on_click': self.on_click, }
         if customizations is not None:
             for key, value in customizations.items():
                 default_customizations[key] = value
+
         self.binded_command = default_customizations['on_click']
         row, col = row_and_column
         width = default_customizations['width']
         self.height = default_customizations['height']
         padx = default_customizations['padx']
+        style = default_customizations['style']
+
+        print("style:", style)
+
         self.card = card
         text = self.card.get_card_text()
         break_count = text.count('\n')
@@ -222,8 +245,10 @@ class CardButton(tb.Frame):
         for i in range(self.height - break_count):
             text += '\n'
 
-        self.button = tb.Button(
-            parent, text=text, command=self.on_click, width=20)
+        self.button = tb.Button(self.parent, text=text, width=width,
+                                style=style,
+                                command=self.on_click,
+                                )
         self.button.grid(row=row, column=col, padx=padx)
 
     def on_click(self):
@@ -243,6 +268,7 @@ class CardButton(tb.Frame):
             text += '\n'
 
         self.button.configure(text=text)
+
 
 class Label(tb.Frame):
     def __init__(self, parent, row_and_column: tuple, text: str, customizations=None):
@@ -278,4 +304,4 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Card Game', size=(700, 300))
+App(title='Card Game', size=(1000, 300))
