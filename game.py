@@ -332,4 +332,4 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Awesome Card Game v0.1', size=(1000, 300))
+App(title='Awesome Card Game v0.2', size=(1000, 300))
