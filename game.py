@@ -4,11 +4,11 @@ from random import randint, choice
 import math
 import logging
 from logging import debug, info
-logging.basicConfig(level=logging.INFO)
+
 
 
 class App(tb.Window):
-    def __init__(self, title, size, theme='darkly', target_score=0, starting_score=100):
+    def __init__(self, title, size, theme='darkly', target_score=0, starting_score=100, logging_level=logging.INFO):
         '''
         # Main window
         ### Parameters:
@@ -16,14 +16,18 @@ class App(tb.Window):
         - size: x and y dimensions of the window. This is also the minimum size
         - target_score: score that ends the game
         - starting_score: starting point at the start of the game
-        - theme(NOT IN USE): your custom theme or one of the above:\n
+        - theme: your custom theme or one of the above:\n
                   'cosmo', 'flatly', 'litera',\n
                   'minty', 'lumen', 'sandstone', 'yeti',\n
                   'pulse', 'united', 'morph', 'journal',\n
                   'darkly', 'superhero', 'solar',\n
                   'cyborg', 'vapor', 'simplex', 'cerculean'
+        - logging_level: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
         '''
         super().__init__(themename=theme)
+        logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
+                            datefmt='%I:%M:%S',
+                            level=logging.INFO)
         self.title(title)
         self.geometry(f'{size[0]}x{size[1]}')
         self.minsize(size[0], size[1])
@@ -328,4 +332,4 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Card Game', size=(1000, 300))
+App(title='Awesome Card Game v0.1', size=(1000, 300))
