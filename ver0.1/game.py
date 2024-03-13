@@ -33,8 +33,8 @@ class App(tb.Window):
         self.main = Main(self)
         self.mainloop()
 
-       
     # Not used
+
     def change_theme(self, theme):
         self.style.theme_use(theme)
 
@@ -87,26 +87,28 @@ class Main(tb.Frame):
         self.card3 = self.init_card(self.frame, 2, 2, 'multiplication', 2)
         self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
 
-    # TODO:
-    # - Use reinit_card() when pressing play-again
     def play_again(self):
         self.try_again_button.grid_remove()
         self.win_label.change_label('')
         self.parent.set_current_score(self.parent.get_starting_score())
         self.current_score.change_label(self.parent.get_current_score())
-        self.card1 = self.init_card(self.frame, 2, 0, 'addition', 0)
-        self.card2 = self.init_card(self.frame, 2, 1, 'subtraction', 1)
-        self.card3 = self.init_card(self.frame, 2, 2, 'multiplication', 2)
-        self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
+        self.reinit_card(self.card1, 'addition')
+        self.reinit_card(self.card2, 'subtraction')
+        self.reinit_card(self.card3, 'multiplication')
+        self.reinit_card(self.card4, 'division')
+        self.card1.enable()
+        self.card2.enable()
+        self.card3.enable()
+        self.card4.enable()
 
     # Used on start and when pressing play-again
     def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
         return CardButton(frame, (row, column), Card(card_type, card_index),
                           customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
 
-    def reinit_card(self, card):
+    def reinit_card(self, card, operation=None):
         card_class = card.get_card()
-        card_class.reinit_card()
+        card_class.reinit_card(operation)
         card.update_text()
 
     def on_click_card(self, card):
@@ -197,9 +199,12 @@ class Card():
     def get_card(self) -> dict:
         return {'value': self.value, 'index': self.index, 'operator': self.operator}
 
-    def reinit_card(self):
-        self.card_type = choice(['addition', 'subtraction', 'multiplication',
-                                 'division', 'round_up', 'round_down'])
+    def reinit_card(self, operation=None):
+        if operation:
+            self.card_type = operation
+        else:
+            self.card_type = choice(['addition', 'subtraction', 'multiplication',
+                                    'division', 'round_up', 'round_down'])
         self.value = randint(self.min_value, self.max_value)
         self.init_value_and_operator()
 
@@ -216,7 +221,7 @@ class CardButton(tb.Frame):
         - row_and_column: as a tuple (row, column)
         - card: Instance of a Card class
         - customizations: default={'width': 12, 'height': 5, 'padx': 5,
-                          'style': 'Primary.TButton',
+                          'style': 'TButton',
                           'on_click': self.on_click, }
         '''
         self.parent = parent
@@ -256,6 +261,8 @@ class CardButton(tb.Frame):
 
     def disable(self):
         self.button.configure(state=DISABLED)
+    def enable(self):
+        self.button.configure(state=ACTIVE)
 
     def get_card(self):
         return self.card
