@@ -2,6 +2,9 @@ import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 from random import randint, choice
 import math
+import logging
+from logging import debug, info
+logging.basicConfig(level=logging.INFO)
 
 
 class App(tb.Window):
@@ -29,14 +32,8 @@ class App(tb.Window):
         self.current_score = starting_score
 
         self.style.configure('TButton', font=('Helvetica', 18))
-
         self.main = Main(self)
         self.mainloop()
-
-    # Not used
-
-    def change_theme(self, theme):
-        self.style.theme_use(theme)
 
     def get_target_score(self):
         return self.target_score
@@ -88,6 +85,7 @@ class Main(tb.Frame):
         self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
 
     def play_again(self):
+        info("Play again button pressed")
         self.try_again_button.grid_remove()
         self.win_label.change_label('')
         self.parent.set_current_score(self.parent.get_starting_score())
@@ -96,58 +94,79 @@ class Main(tb.Frame):
         self.reinit_card(self.card2, 'subtraction')
         self.reinit_card(self.card3, 'multiplication')
         self.reinit_card(self.card4, 'division')
+        self.enable_cards()
+
+    # Used on start
+    def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
+        return CardButton(frame, (row, column), Card(card_type, card_index),
+                          customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
+    def disable_cards(self):
+        info("All cards disabled")
+        self.card1.disable()
+        self.card2.disable()
+        self.card3.disable()
+        self.card4.disable()
+
+    def enable_cards(self):
+        info("All cards enabled")
         self.card1.enable()
         self.card2.enable()
         self.card3.enable()
         self.card4.enable()
-
-    # Used on start and when pressing play-again
-    def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
-        return CardButton(frame, (row, column), Card(card_type, card_index),
-                          customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
-
+    # Used when clicking card and 'play again'
     def reinit_card(self, card, operation=None):
+        info("Reiniting card")
         card_class = card.get_card()
+        debug(f"Reiniting card: {card_class.get_card_text()}")
         card_class.reinit_card(operation)
         card.update_text()
 
     def on_click_card(self, card):
-        print(card.get_card_text())
+        info("Clicked card")
+        debug(f"Clicked: {card.get_card_text()}")
         current_score = self.parent.get_current_score()
         card_obj = card.get_card()
         card_value = card_obj['value']
         card_index = card_obj['index']
         if card.operator == '+':
+            debug(f"Addition -> round(current_score+card_value, 1) = {round(current_score+card_value, 1)}")
             self.parent.set_current_score(round(current_score+card_value, 1))
         elif card.operator == '-':
+            debug(f"Subtraction -> round(current_score+card_value, 1) = {round(current_score-card_value, 1)}")
             self.parent.set_current_score(round(current_score-card_value, 1))
         elif card.operator == '*':
+            debug(f"Multiplication -> round(current_score*card_value, 1) = {round(current_score*card_value, 1)}")
             self.parent.set_current_score(round(current_score*card_value, 1))
         elif card.operator == '/':
+            debug(f"Division -> round(current_score/card_value, 1) = {round(current_score/card_value, 1)}")
             self.parent.set_current_score(round(current_score/card_value, 1))
         elif card.operator == 'round_up':
+            debug(f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
             self.parent.set_current_score(math.ceil(current_score))
         elif card.operator == 'round_down':
+            debug(f"Round down -> math.floor(current_score) = {math.floor(current_score)}")
             self.parent.set_current_score(math.floor(current_score))
 
         if card_index == 0:
             self.reinit_card(self.card1)
+            debug(f"Card 1 is now: {self.card1.get_card().get_card_text()}")
         elif card_index == 1:
             self.reinit_card(self.card2)
+            debug(f"Card 2 is now: {self.card2.get_card().get_card_text()}")
         elif card_index == 2:
             self.reinit_card(self.card3)
+            debug(f"Card 3 is now: {self.card3.get_card().get_card_text()}")
         elif card_index == 3:
             self.reinit_card(self.card4)
+            debug(f"Card 4 is now: {self.card4.get_card().get_card_text()}")
 
         self.current_score.change_label(text=self.parent.get_current_score())
+        debug(f"Current score is now: {self.parent.get_current_score()}")
 
         if self.parent.game_over():
-            print('You win')
+            info('Game ended')
             self.win_label.change_label('You win!')
-            self.card1.disable()
-            self.card2.disable()
-            self.card3.disable()
-            self.card4.disable()
+            self.disable_cards()
             self.try_again_button.grid(row=0, column=3)
 
 
@@ -194,7 +213,7 @@ class Card():
             self.value = 'Round down'
             self.operator = 'round_down'
         else:
-            print('Invalid card_type:', self.card_type)
+            debug('Invalid card_type:', self.card_type)
 
     def get_card(self) -> dict:
         return {'value': self.value, 'index': self.index, 'operator': self.operator}
@@ -207,8 +226,8 @@ class Card():
                                     'division', 'round_up', 'round_down'])
         self.value = randint(self.min_value, self.max_value)
         self.init_value_and_operator()
-
-        print('Card updated', self.get_card())
+        info("Card has been updated")
+        debug(f'Card updated {self.get_card()}')
 
 
 class CardButton(tb.Frame):
@@ -240,8 +259,6 @@ class CardButton(tb.Frame):
         self.height = default_customizations['height']
         padx = default_customizations['padx']
         style = default_customizations['style']
-
-        print("style:", style)
 
         self.card = card
         text = self.card.get_card_text()
