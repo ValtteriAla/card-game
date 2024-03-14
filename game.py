@@ -6,7 +6,6 @@ import logging
 from logging import debug, info
 
 
-
 class App(tb.Window):
     def __init__(self, title, size, theme='darkly', target_score=0, starting_score=100, logging_level=logging.INFO):
         '''
@@ -84,18 +83,19 @@ class App(tb.Window):
         self.highscore = value
         try:
             with open('highscore.txt', 'w') as f:
-                debug(f"Writing highscore to 'highscore.txt': {self.highscore}")
+                debug(f"Writing highscore to 'highscore.txt': {
+                      self.highscore}")
                 f.write(str(self.highscore))
         except Exception as e:
             debug(e)
             pass
-    
+
     def update_current_highscore(self):
-        self.current_highscore -= 1
-    
+        if self.current_highscore > 0:
+            self.current_highscore -= 1
+
     def get_current_highscore(self) -> int:
         return self.current_highscore
-
 
 
 class Main(tb.Frame):
@@ -112,15 +112,16 @@ class Main(tb.Frame):
         self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
         self.frame = tb.Frame(self.parent, padding=0, width=2)
         self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
-        
+
         self.frame_top_left.grid(column=0, row=0, sticky=NW)
         self.frame_top_right.grid(column=0, row=0, sticky=NE)
         self.frame.grid(column=0, row=1, sticky=N)
         self.frame_cards.grid(column=0, row=2, sticky=N)
 
-        self.current_highscore_label = Label(self.frame_top_left, (0, 0), f'Current score: {self.parent.get_current_highscore()}', {'font': ('Arial', 14)})
-        self.highscore_label = Label(self.frame_top_right, (0, 0), f'Highscore: {self.parent.get_highscore()}', {'font': ('Arial', 14)})
-        
+        self.current_highscore_label = Label(self.frame_top_left, (0, 0), f'Current score: {
+                                             self.parent.get_current_highscore()}', {'font': ('Arial', 14)})
+        self.highscore_label = Label(self.frame_top_right, (0, 0), f'Highscore: {
+                                     self.parent.get_highscore()}', {'font': ('Arial', 14)})
 
         self.win_label = Label(self.frame, (0, 0), '')
         goal_label = Label(self.frame, (1, 1),
@@ -132,7 +133,8 @@ class Main(tb.Frame):
                                    f'Current: {self.parent.get_current_score()}')
         self.card1 = self.init_card(self.frame_cards, 3, 0, 'addition', 0)
         self.card2 = self.init_card(self.frame_cards, 3, 1, 'subtraction', 1)
-        self.card3 = self.init_card(self.frame_cards, 3, 2, 'multiplication', 2)
+        self.card3 = self.init_card(
+            self.frame_cards, 3, 2, 'multiplication', 2)
         self.card4 = self.init_card(self.frame_cards, 3, 3, 'division', 3)
 
     def play_again(self):
@@ -141,7 +143,8 @@ class Main(tb.Frame):
         self.win_label.change_label('')
         self.parent.set_current_score(self.parent.get_starting_score())
         self.parent.reset_current_highscore()
-        self.current_highscore_label.change_label(self.parent.get_current_highscore())
+        self.current_highscore_label.change_label(
+            self.parent.get_current_highscore())
         self.current_score.change_label(self.parent.get_current_score())
         self.reinit_card(self.card1, 'addition')
         self.reinit_card(self.card2, 'subtraction')
@@ -153,6 +156,7 @@ class Main(tb.Frame):
     def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
         return CardButton(frame, (row, column), Card(card_type, card_index),
                           customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
+
     def disable_cards(self):
         info("All cards disabled")
         self.card1.disable()
@@ -167,6 +171,7 @@ class Main(tb.Frame):
         self.card3.enable()
         self.card4.enable()
     # Used when clicking card and 'play again'
+
     def reinit_card(self, card, operation=None):
         info("Reiniting card")
         card_class = card.get_card()
@@ -182,22 +187,28 @@ class Main(tb.Frame):
         card_value = card_obj['value']
         card_index = card_obj['index']
         if card.operator == '+':
-            debug(f"Addition -> round(current_score+card_value, 1) = {round(current_score+card_value, 1)}")
+            debug(
+                f"Addition -> round(current_score+card_value, 1) = {round(current_score+card_value, 1)}")
             self.parent.set_current_score(round(current_score+card_value, 1))
         elif card.operator == '-':
-            debug(f"Subtraction -> round(current_score+card_value, 1) = {round(current_score-card_value, 1)}")
+            debug(f"Subtraction -> round(current_score+card_value, 1) = {
+                  round(current_score-card_value, 1)}")
             self.parent.set_current_score(round(current_score-card_value, 1))
         elif card.operator == '*':
-            debug(f"Multiplication -> round(current_score*card_value, 1) = {round(current_score*card_value, 1)}")
+            debug(f"Multiplication -> round(current_score*card_value, 1) = {
+                  round(current_score*card_value, 1)}")
             self.parent.set_current_score(round(current_score*card_value, 1))
         elif card.operator == '/':
-            debug(f"Division -> round(current_score/card_value, 1) = {round(current_score/card_value, 1)}")
+            debug(
+                f"Division -> round(current_score/card_value, 1) = {round(current_score/card_value, 1)}")
             self.parent.set_current_score(round(current_score/card_value, 1))
         elif card.operator == 'round_up':
-            debug(f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
+            debug(
+                f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
             self.parent.set_current_score(math.ceil(current_score))
         elif card.operator == 'round_down':
-            debug(f"Round down -> math.floor(current_score) = {math.floor(current_score)}")
+            debug(
+                f"Round down -> math.floor(current_score) = {math.floor(current_score)}")
             self.parent.set_current_score(math.floor(current_score))
 
         if card_index == 0:
@@ -215,7 +226,8 @@ class Main(tb.Frame):
 
         self.parent.update_current_highscore()
         self.current_score.change_label(text=self.parent.get_current_score())
-        self.current_highscore_label.change_label(text=f"Score: {self.parent.get_current_highscore()}")
+        self.current_highscore_label.change_label(
+            text=f"Score: {self.parent.get_current_highscore()}")
         debug(f"Current score is now: {self.parent.get_current_score()}")
 
         if self.parent.game_over():
@@ -227,7 +239,8 @@ class Main(tb.Frame):
             highscore = self.parent.get_highscore()
             if current_highscore > highscore:
                 self.parent.set_highscore(current_highscore)
-                self.highscore_label.change_label(f'Highscore: {current_highscore}')
+                self.highscore_label.change_label(
+                    f'Highscore: {current_highscore}')
 
 
 class Card():
@@ -244,7 +257,7 @@ class Card():
         self.card_type = card_type
         if self.card_type == "multiplication" or self.card_type == "division":
             self.value = randint(min_value, max_value//2)
-        else:    
+        else:
             self.value = randint(min_value, max_value)
         self.index = index
         self.operator = None
@@ -312,7 +325,7 @@ class CardButton(tb.Frame):
         self.parent = parent
 
         default_customizations = {
-            'width': 8, 'height': 5, 'padx': 8,
+            'width': 8, 'height': 5, 'padx': 8, 'pady': 10,
             'style': 'TButton',
             'on_click': self.on_click, }
         if customizations is not None:
@@ -324,6 +337,7 @@ class CardButton(tb.Frame):
         width = default_customizations['width']
         self.height = default_customizations['height']
         padx = default_customizations['padx']
+        pady = default_customizations['pady']
         style = default_customizations['style']
 
         self.card = card
@@ -338,13 +352,14 @@ class CardButton(tb.Frame):
                                 style=style,
                                 command=self.on_click,
                                 )
-        self.button.grid(row=row, column=col, padx=padx)
+        self.button.grid(row=row, column=col, padx=padx, pady=pady)
 
     def on_click(self):
         self.binded_command(self.card)
 
     def disable(self):
         self.button.configure(state=DISABLED)
+
     def enable(self):
         self.button.configure(state=ACTIVE)
 
@@ -401,4 +416,5 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Awesome Card Game v0.2', size=(600, 300), logging_level=logging.DEBUG)
+App(title='Awesome Card Game v0.2', theme="superhero", size=(
+    600, 300), logging_level=logging.DEBUG)
