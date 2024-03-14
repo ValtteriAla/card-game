@@ -27,7 +27,7 @@ class App(tb.Window):
         super().__init__(themename=theme)
         logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
                             datefmt='%I:%M:%S',
-                            level=logging.INFO)
+                            level=logging_level)
         self.title(title)
         self.geometry(f'{size[0]}x{size[1]}')
         self.minsize(size[0], size[1])
@@ -73,20 +73,23 @@ class Main(tb.Frame):
         default_button_width = 30
 
         self.frame = tb.Frame(self.parent, padding=8, width=2)
+        self.frame_cards = tb.Frame(self.parent, padding=8, width=2)
+        
         self.frame.grid(column=0, row=0, sticky=N)
+        self.frame_cards.grid(column=0, row=1, sticky=N)
 
         self.win_label = Label(self.frame, (0, 0), '')
-        goal_label = Label(self.frame, (1, 0),
+        goal_label = Label(self.frame, (1, 1),
                            f'Goal: {self.parent.get_target_score()}')
         self.try_again_button = tb.Button(self.frame,
                                           text='Play again',
                                           command=self.play_again)
-        self.current_score = Label(self.frame, (1, 1),
+        self.current_score = Label(self.frame, (2, 1),
                                    f'Current: {self.parent.get_current_score()}')
-        self.card1 = self.init_card(self.frame, 2, 0, 'addition', 0)
-        self.card2 = self.init_card(self.frame, 2, 1, 'subtraction', 1)
-        self.card3 = self.init_card(self.frame, 2, 2, 'multiplication', 2)
-        self.card4 = self.init_card(self.frame, 2, 3, 'division', 3)
+        self.card1 = self.init_card(self.frame_cards, 3, 0, 'addition', 0)
+        self.card2 = self.init_card(self.frame_cards, 3, 1, 'subtraction', 1)
+        self.card3 = self.init_card(self.frame_cards, 3, 2, 'multiplication', 2)
+        self.card4 = self.init_card(self.frame_cards, 3, 3, 'division', 3)
 
     def play_again(self):
         info("Play again button pressed")
@@ -250,7 +253,7 @@ class CardButton(tb.Frame):
         self.parent = parent
 
         default_customizations = {
-            'width': 12, 'height': 5, 'padx': 5,
+            'width': 8, 'height': 5, 'padx': 8,
             'style': 'TButton',
             'on_click': self.on_click, }
         if customizations is not None:
@@ -268,14 +271,16 @@ class CardButton(tb.Frame):
         text = self.card.get_card_text()
         break_count = text.count('\n')
 
-        for i in range(self.height - break_count):
+        for i in range((self.height - break_count)//2):
             text += '\n'
+            text = '\n' + text
 
         self.button = tb.Button(self.parent, text=text, width=width,
                                 style=style,
                                 command=self.on_click,
                                 )
         self.button.grid(row=row, column=col, padx=padx)
+        debug(f"padx: {padx}")
 
     def on_click(self):
         self.binded_command(self.card)
@@ -292,8 +297,9 @@ class CardButton(tb.Frame):
         text = self.card.get_card_text()
         break_count = text.count('\n')
 
-        for i in range(self.height - break_count):
+        for i in range((self.height - break_count)//2):
             text += '\n'
+            text = '\n' + text
 
         self.button.configure(text=text)
 
@@ -332,4 +338,4 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Awesome Card Game v0.2', size=(1000, 300))
+App(title='Awesome Card Game v0.2', size=(1000, 300), logging_level=logging.DEBUG)
