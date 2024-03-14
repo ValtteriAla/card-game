@@ -155,7 +155,15 @@ class Main(tb.Frame):
     # Used on start
     def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
         return CardButton(frame, (row, column), Card(card_type, card_index),
-                          customizations={'on_click': self.on_click_card, 'style': 'custom.Primary.TButton'})
+                          customizations={'on_click': self.on_click_card, 'style': self.get_card_style(card_type)})
+
+    def get_card_style(self, card_type: str) -> str:
+        if card_type == "multiplication" or card_type == "division":
+            return 'custom.Success.TButton'
+        elif card_type == "round_up" or card_type == "round_down":
+            return 'custom.Info.TButton'
+        else:
+            return 'custom.Primary.TButton'
 
     def disable_cards(self):
         info("All cards disabled")
@@ -177,7 +185,7 @@ class Main(tb.Frame):
         card_class = card.get_card()
         debug(f"Reiniting card: {card_class.get_card_text()}")
         card_class.reinit_card(operation)
-        card.update_text()
+        card.update_text(self.get_card_style(card_class.card_type))
 
     def on_click_card(self, card):
         info("Clicked card")
@@ -349,7 +357,7 @@ class CardButton(tb.Frame):
             text = '\n' + text
 
         self.button = tb.Button(self.parent, text=text, width=width,
-                                style=style,
+                                bootstyle=style,
                                 command=self.on_click,
                                 )
         self.button.grid(row=row, column=col, padx=padx, pady=pady)
@@ -366,7 +374,7 @@ class CardButton(tb.Frame):
     def get_card(self):
         return self.card
 
-    def update_text(self):
+    def update_text(self, style: str):
         text = self.card.get_card_text()
         break_count = text.count('\n')
 
@@ -379,7 +387,9 @@ class CardButton(tb.Frame):
         if break_count > 0:
             text = text[:-1]
 
-        self.button.configure(text=text)
+        self.button.configure(text=text, bootstyle=style)
+        debug(f"Card style is now: {style}")
+
 
 
 class Label(tb.Frame):
@@ -416,5 +426,5 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Awesome Card Game v0.2', theme="superhero", size=(
+App(title='Awesome Card Game v0.3', theme="superhero", size=(
     600, 300), logging_level=logging.DEBUG)
