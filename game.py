@@ -35,7 +35,8 @@ class App(tb.Window):
         self.starting_score = starting_score
         self.current_score = starting_score
         self.highscore = self.init_highscore()
-        self.current_highscore = 100
+        self.max_highscore = 100
+        self.current_highscore = self.max_highscore
 
         self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
@@ -49,6 +50,9 @@ class App(tb.Window):
 
     def get_starting_score(self):
         return self.starting_score
+
+    def reset_current_highscore(self):
+        self.current_highscore = self.max_highscore
 
     def set_current_score(self, value: int):
         starting_score = self.get_starting_score()
@@ -136,6 +140,8 @@ class Main(tb.Frame):
         self.try_again_button.grid_remove()
         self.win_label.change_label('')
         self.parent.set_current_score(self.parent.get_starting_score())
+        self.parent.reset_current_highscore()
+        self.current_highscore_label.change_label(self.parent.get_current_highscore())
         self.current_score.change_label(self.parent.get_current_score())
         self.reinit_card(self.card1, 'addition')
         self.reinit_card(self.card2, 'subtraction')
@@ -333,7 +339,6 @@ class CardButton(tb.Frame):
                                 command=self.on_click,
                                 )
         self.button.grid(row=row, column=col, padx=padx)
-        debug(f"padx: {padx}")
 
     def on_click(self):
         self.binded_command(self.card)
