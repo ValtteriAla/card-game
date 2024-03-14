@@ -34,6 +34,8 @@ class App(tb.Window):
         self.target_score = target_score
         self.starting_score = starting_score
         self.current_score = starting_score
+        self.highscore = self.init_highscore()
+        self.current_highscore = 100
 
         self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
@@ -60,6 +62,37 @@ class App(tb.Window):
     def game_over(self):
         return self.get_target_score() == self.get_current_score()
 
+    def init_highscore(self) -> int:
+        try:
+            with open('highscore.txt', 'r') as f:
+                data = f.read()
+                print(data)
+                highscore = int(data)
+                return highscore
+        except Exception as e:
+            debug(e)
+            return 0
+
+    def get_highscore(self) -> int:
+        return self.highscore
+
+    def set_highscore(self, value: int):
+        self.highscore = value
+        try:
+            with open('highscore.txt', 'w') as f:
+                debug(f"Writing highscore to 'highscore.txt': {self.highscore}")
+                f.write(str(self.highscore))
+        except Exception as e:
+            debug(e)
+            pass
+    
+    def update_current_highscore(self):
+        self.current_highscore -= 1
+    
+    def get_current_highscore(self) -> int:
+        return self.current_highscore
+
+
 
 class Main(tb.Frame):
     def __init__(self, parent):
@@ -71,12 +104,19 @@ class Main(tb.Frame):
         '''
         self.parent = parent
         default_button_width = 30
-
-        self.frame = tb.Frame(self.parent, padding=8, width=2)
-        self.frame_cards = tb.Frame(self.parent, padding=8, width=2)
+        self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
+        self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
+        self.frame = tb.Frame(self.parent, padding=0, width=2)
+        self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
         
-        self.frame.grid(column=0, row=0, sticky=N)
-        self.frame_cards.grid(column=0, row=1, sticky=N)
+        self.frame_top_left.grid(column=0, row=0, sticky=NW)
+        self.frame_top_right.grid(column=0, row=0, sticky=NE)
+        self.frame.grid(column=0, row=1, sticky=N)
+        self.frame_cards.grid(column=0, row=2, sticky=N)
+
+        self.current_highscore_label = Label(self.frame_top_left, (0, 0), f'Current score: {self.parent.get_current_highscore()}', {'font': ('Arial', 14)})
+        self.highscore_label = Label(self.frame_top_right, (0, 0), f'Highscore: {self.parent.get_highscore()}', {'font': ('Arial', 14)})
+        
 
         self.win_label = Label(self.frame, (0, 0), '')
         goal_label = Label(self.frame, (1, 1),
@@ -167,14 +207,21 @@ class Main(tb.Frame):
             self.reinit_card(self.card4)
             debug(f"Card 4 is now: {self.card4.get_card().get_card_text()}")
 
+        self.parent.update_current_highscore()
         self.current_score.change_label(text=self.parent.get_current_score())
+        self.current_highscore_label.change_label(text=f"Score: {self.parent.get_current_highscore()}")
         debug(f"Current score is now: {self.parent.get_current_score()}")
 
         if self.parent.game_over():
             info('Game ended')
             self.win_label.change_label('You win!')
             self.disable_cards()
-            self.try_again_button.grid(row=0, column=3)
+            self.try_again_button.grid(row=0, column=4)
+            current_highscore = self.parent.get_current_highscore()
+            highscore = self.parent.get_highscore()
+            if current_highscore > highscore:
+                self.parent.set_highscore(current_highscore)
+                self.highscore_label.change_label(f'Highscore: {current_highscore}')
 
 
 class Card():
@@ -189,7 +236,10 @@ class Card():
         - max_value: maximum value that this card's value can get, default=50
         '''
         self.card_type = card_type
-        self.value = randint(min_value, max_value)
+        if self.card_type == "multiplication" or self.card_type == "division":
+            self.value = randint(min_value, max_value//2)
+        else:    
+            self.value = randint(min_value, max_value)
         self.index = index
         self.operator = None
         self.min_value = min_value
@@ -214,10 +264,10 @@ class Card():
             self.value *= choice([-1, 1])
             self.operator = '/'
         elif self.card_type == 'round_up':
-            self.value = 'Round up'
+            self.value = 'Round\nup'
             self.operator = 'round_up'
         elif self.card_type == 'round_down':
-            self.value = 'Round down'
+            self.value = 'Round\ndown'
             self.operator = 'round_down'
         else:
             debug('Invalid card_type:', self.card_type)
@@ -231,7 +281,10 @@ class Card():
         else:
             self.card_type = choice(['addition', 'subtraction', 'multiplication',
                                     'division', 'round_up', 'round_down'])
-        self.value = randint(self.min_value, self.max_value)
+        if self.card_type == "multiplication" or self.card_type == "division":
+            self.value = randint(self.min_value, self.max_value//2)
+        else:
+            self.value = randint(self.min_value, self.max_value)
         self.init_value_and_operator()
         info("Card has been updated")
         debug(f'Card updated {self.get_card()}')
@@ -297,9 +350,14 @@ class CardButton(tb.Frame):
         text = self.card.get_card_text()
         break_count = text.count('\n')
 
+        debug(f"breakcount: {break_count}")
+
         for i in range((self.height - break_count)//2):
             text += '\n'
             text = '\n' + text
+
+        if break_count > 0:
+            text = text[:-1]
 
         self.button.configure(text=text)
 
@@ -338,4 +396,4 @@ class Label(tb.Frame):
         self.label.configure(text=text)
 
 
-App(title='Awesome Card Game v0.2', size=(1000, 300), logging_level=logging.DEBUG)
+App(title='Awesome Card Game v0.2', size=(600, 300), logging_level=logging.DEBUG)
