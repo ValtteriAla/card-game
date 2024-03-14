@@ -39,6 +39,7 @@ class App(tb.Window):
 
         self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
+        self.game1 = None
         self.mainloop()
 
     def get_target_score(self):
@@ -97,11 +98,48 @@ class App(tb.Window):
     def get_current_highscore(self) -> int:
         return self.current_highscore
 
+    def change_window(self, window: str):
+        if window == "game1":
+            self.game1 = Game1(self)
+        elif window == "main":
+            self.main = Main(self)
+        else:
+            self.main = Main(self)
+
 
 class Main(tb.Frame):
     def __init__(self, parent):
         '''
         # Main window
+        ## Game 1: 
+        4 cards with different operations, the goal is to get the target score 0
+        '''
+        self.parent = parent
+        self.frame = tb.Frame(self.parent)        
+        self.frame_games = tb.Frame(self.parent)
+        self.frame.grid(column=0, row=0)
+        self.frame_games.grid(column=0, row=1)
+        self.header = Label(self.frame, (0,4), "Game Arcade",
+                             customizations={"font":('Helvetica', 24),
+                                             "justify": CENTER, "columnspan": 3,
+                                             "padding": 20 })
+
+        self.game1_button = tb.Button(self.frame, text="Game 1", padding=5, command=lambda: self.on_click_game_button("game1"))
+        self.game1_button.grid(row=1, column=0, padx=20, pady=20)
+
+    def on_click_game_button(self, game: str):
+        self.parent.change_window(game)
+        self.destroy()
+    
+    def destroy(self):
+        self.frame.destroy()
+        self.header.destroy()
+        self.game1_button.destroy()
+
+class Game1(tb.Frame):
+    def __init__(self, parent):
+        '''
+        # Game 1 window
         'Goal', 'Current Score' and 'You win' labels are on first row.
         'Try again' button appears when game is over.
         Buttons 1-4 are on second row in a form of a card.
@@ -118,13 +156,16 @@ class Main(tb.Frame):
         self.frame.grid(column=0, row=1, sticky=N)
         self.frame_cards.grid(column=0, row=2, sticky=N)
 
-        self.current_highscore_label = Label(self.frame_top_left, (0, 0), f'Current score: {
+        self.back_button = tb.Button(self.frame_top_left, text="Quit", command=lambda: self.quit_game())
+        self.back_button.grid(row=0, column=0)
+
+        self.current_highscore_label = Label(self.frame_top_left, (0, 1), f'Current score: {
                                              self.parent.get_current_highscore()}', {'font': ('Arial', 14)})
         self.highscore_label = Label(self.frame_top_right, (0, 0), f'Highscore: {
                                      self.parent.get_highscore()}', {'font': ('Arial', 14)})
 
         self.win_label = Label(self.frame, (0, 0), '')
-        goal_label = Label(self.frame, (1, 1),
+        self.goal_label = Label(self.frame, (1, 1),
                            f'Goal: {self.parent.get_target_score()}')
         self.try_again_button = tb.Button(self.frame,
                                           text='Play again',
@@ -136,6 +177,23 @@ class Main(tb.Frame):
         self.card3 = self.init_card(
             self.frame_cards, 3, 2, 'multiplication', 2)
         self.card4 = self.init_card(self.frame_cards, 3, 3, 'division', 3)
+
+    def quit_game(self):
+        self.parent.change_window("main")
+        self.destroy_self()
+
+    def destroy_self(self):
+        self.frame.destroy()
+        self.frame_cards.destroy()
+        self.frame_top_left.destroy()
+        self.frame_top_right.destroy()
+        self.win_label.destroy()
+        self.goal_label.destroy()
+        self.try_again_button.destroy()
+        self.current_score.destroy()
+        self.back_button.destroy()
+        self.current_score.destroy()
+        self.highscore_label.destroy()
 
     def play_again(self):
         info("Play again button pressed")
@@ -399,14 +457,15 @@ class Label(tb.Frame):
         ### Parameters:
         - row_and_column: tuple with row and column values - (0, 0)
         - text: What is shown in the label
-        - customizations: {'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20)}
+        - customizations: {'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20), 'padding': 0}
         '''
         super().__init__(parent)
 
         default_customizations = {'sticky': None,
                                   'columnspan': 1,
                                   'justify': 'left',
-                                  'font': ('Arial', 20)}
+                                  'font': ('Arial', 20),
+                                  'padding': 0}
 
         if customizations is not None:
             for key, value in customizations.items():
@@ -416,10 +475,11 @@ class Label(tb.Frame):
         colspan = default_customizations['columnspan']
         justify = default_customizations['justify']
         font = default_customizations['font']
+        padding = default_customizations['padding']
 
         row, col = row_and_column
 
-        self.label = tb.Label(parent, text=text, justify=justify, font=font)
+        self.label = tb.Label(parent, text=text, justify=justify, font=font, padding=padding)
         self.label.grid(row=row, column=col, columnspan=colspan, sticky=sticky)
 
     def change_label(self, text: str):
@@ -427,4 +487,4 @@ class Label(tb.Frame):
 
 
 App(title='Awesome Card Game v0.3', theme="superhero", size=(
-    600, 300), logging_level=logging.DEBUG)
+    600, 350), logging_level=logging.DEBUG)
