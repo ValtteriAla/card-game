@@ -3,7 +3,8 @@ from ttkbootstrap.constants import *
 from random import randint, choice
 import math
 import logging
-from logging import debug, info
+from logging import debug, info, error
+import json
 
 
 class App(tb.Window):
@@ -30,70 +31,40 @@ class App(tb.Window):
         self.title(title)
         self.geometry(f'{size[0]}x{size[1]}')
         self.minsize(size[0], size[1])
-        self.target_score = target_score
-        self.starting_score = starting_score
-        self.current_score = starting_score
-        self.highscore = self.init_highscore()
-        self.max_highscore = 100
-        self.current_highscore = self.max_highscore
+        self.highscores = self.get_highscores()
 
         self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
         self.game1 = None
         self.mainloop()
 
-    def get_target_score(self):
-        return self.target_score
-
-    def get_current_score(self):
-        return self.current_score
-
-    def get_starting_score(self):
-        return self.starting_score
-
-    def reset_current_highscore(self):
-        self.current_highscore = self.max_highscore
-
-    def set_current_score(self, value: int):
-        starting_score = self.get_starting_score()
-        if value > starting_score:
-            self.current_score = starting_score
-        elif value < starting_score*-1:
-            self.current_score = starting_score*-1
-        else:
-            self.current_score = value
-
-    def game_over(self):
-        return self.get_target_score() == self.get_current_score()
-
-    def init_highscore(self) -> int:
+    def get_highscores(self) -> dict:
         try:
-            with open('highscore.txt', 'r') as f:
-                data = f.read()
-                print(data)
-                highscore = int(data)
-                return highscore
+            with open("highscores.json", "r") as f:
+                highscores = json.load(f)
+                return highscores
         except Exception as e:
-            debug(e)
+            error(e)
+            return {"game1": 0}
+
+    def get_highscore(self, game: str) -> int:
+        if self.highscores.get(game):
+            return self.highscores[game]
+        else:
+            error(f"Invalid game name; '{game}' while getting highscore")
             return 0
 
-    def get_highscore(self) -> int:
-        return self.highscore
-
-    def set_highscore(self, value: int):
-        self.highscore = value
+    def set_highscore(self, game: str, value: int):
         try:
-            with open('highscore.txt', 'w') as f:
-                debug(f"Writing highscore to 'highscore.txt': {
-                      self.highscore}")
-                f.write(str(self.highscore))
+            self.highscores[game] = value
+            with open('highscores.json', 'w') as f:
+                debug(f"Writing to json: {
+                      self.highscores}")
+                json.dump(self.highscores, f)
         except Exception as e:
-            debug(e)
+            error(e)
             pass
 
-    def update_current_highscore(self):
-        if self.current_highscore > 0:
-            self.current_highscore -= 1
 
     def get_current_highscore(self) -> int:
         return self.current_highscore
@@ -115,29 +86,31 @@ class Main(tb.Frame):
         4 cards with different operations, the goal is to get the target score 0
         '''
         self.parent = parent
-        self.frame = tb.Frame(self.parent)        
+        self.frame = tb.Frame(self.parent)
         self.frame_games = tb.Frame(self.parent)
         self.frame.grid(column=0, row=0)
         self.frame_games.grid(column=0, row=1)
-        self.header = Label(self.frame, (0,4), "Game Arcade",
-                             customizations={"font":('Helvetica', 24),
-                                             "justify": CENTER, "columnspan": 3,
-                                             "padding": 20 })
+        self.header = Label(self.frame, (0, 4), "Game Arcade",
+                            customizations={"font": ('Helvetica', 24),
+                                            "justify": CENTER, "columnspan": 3,
+                                            "padding": 20})
 
-        self.game1_button = tb.Button(self.frame, text="Game 1", padding=5, command=lambda: self.on_click_game_button("game1"))
+        self.game1_button = tb.Button(
+            self.frame, text="Game 1", padding=5, command=lambda: self.on_click_game_button("game1"))
         self.game1_button.grid(row=1, column=0, padx=20, pady=20)
 
     def on_click_game_button(self, game: str):
         self.parent.change_window(game)
         self.destroy()
-    
+
     def destroy(self):
         self.frame.destroy()
         self.header.destroy()
         self.game1_button.destroy()
 
+
 class Game1(tb.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, starting_score=100, target_score=0, max_highscore=100):
         '''
         # Game 1 window
         'Goal', 'Current Score' and 'You win' labels are on first row.
@@ -145,6 +118,15 @@ class Game1(tb.Frame):
         Buttons 1-4 are on second row in a form of a card.
         '''
         self.parent = parent
+
+        self.target_score = target_score
+        self.starting_score = starting_score
+        self.current_score = starting_score
+        self.highscore = self.parent.get_highscore("game1")
+        self.max_highscore = max_highscore
+        self.current_highscore = self.max_highscore
+
+
         default_button_width = 30
         self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
         self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
@@ -156,22 +138,23 @@ class Game1(tb.Frame):
         self.frame.grid(column=0, row=1, sticky=N)
         self.frame_cards.grid(column=0, row=2, sticky=N)
 
-        self.back_button = tb.Button(self.frame_top_left, text="Quit", command=lambda: self.quit_game())
+        self.back_button = tb.Button(
+            self.frame_top_left, text="Quit", command=lambda: self.quit_game())
         self.back_button.grid(row=0, column=0)
 
         self.current_highscore_label = Label(self.frame_top_left, (0, 1), f'Current score: {
-                                             self.parent.get_current_highscore()}', {'font': ('Arial', 14)})
+                                             self.current_highscore}', {'font': ('Arial', 14)})
         self.highscore_label = Label(self.frame_top_right, (0, 0), f'Highscore: {
-                                     self.parent.get_highscore()}', {'font': ('Arial', 14)})
+                                     self.highscore}', {'font': ('Arial', 14)})
 
         self.win_label = Label(self.frame, (0, 0), '')
         self.goal_label = Label(self.frame, (1, 1),
-                           f'Goal: {self.parent.get_target_score()}')
+                                f'Goal: {self.target_score}')
         self.try_again_button = tb.Button(self.frame,
                                           text='Play again',
                                           command=self.play_again)
-        self.current_score = Label(self.frame, (2, 1),
-                                   f'Current: {self.parent.get_current_score()}')
+        self.current_score_label = Label(self.frame, (2, 1),
+                                   f'Current: {self.current_score}')
         self.card1 = self.init_card(self.frame_cards, 3, 0, 'addition', 0)
         self.card2 = self.init_card(self.frame_cards, 3, 1, 'subtraction', 1)
         self.card3 = self.init_card(
@@ -190,26 +173,31 @@ class Game1(tb.Frame):
         self.win_label.destroy()
         self.goal_label.destroy()
         self.try_again_button.destroy()
-        self.current_score.destroy()
+        self.current_score_label.destroy()
         self.back_button.destroy()
-        self.current_score.destroy()
         self.highscore_label.destroy()
 
     def play_again(self):
         info("Play again button pressed")
         self.try_again_button.grid_remove()
         self.win_label.change_label('')
-        self.parent.set_current_score(self.parent.get_starting_score())
-        self.parent.reset_current_highscore()
-        self.current_highscore_label.change_label(
-            self.parent.get_current_highscore())
-        self.current_score.change_label(self.parent.get_current_score())
+        self.set_current_score(self.starting_score)
+        self.reset_current_highscore()
+        self.current_highscore_label.change_label(self.current_highscore)
+        self.current_score_label.change_label(self.current_score)
         self.reinit_card(self.card1, 'addition')
         self.reinit_card(self.card2, 'subtraction')
         self.reinit_card(self.card3, 'multiplication')
         self.reinit_card(self.card4, 'division')
         self.enable_cards()
 
+    def set_current_highscore(self, value: int):
+        if self.current_highscore > self.highscore:
+            self.highscore = self.current_highscore
+            self.parent.set_highscore("game1", self.highscore)
+
+    def reset_current_highscore(self):
+        self.current_highscore = self.max_highscore
     # Used on start
     def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
         return CardButton(frame, (row, column), Card(card_type, card_index),
@@ -238,6 +226,15 @@ class Game1(tb.Frame):
         self.card4.enable()
     # Used when clicking card and 'play again'
 
+    def set_current_score(self, value: int):
+        starting_score = self.starting_score
+        if value > starting_score:
+            self.current_score = starting_score
+        elif value < starting_score*-1:
+            self.current_score = starting_score*-1
+        else:
+            self.current_score = value
+
     def reinit_card(self, card, operation=None):
         info("Reiniting card")
         card_class = card.get_card()
@@ -245,37 +242,41 @@ class Game1(tb.Frame):
         card_class.reinit_card(operation)
         card.update_text(self.get_card_style(card_class.card_type))
 
+    def update_current_highscore(self):
+        if self.current_highscore > 0:
+            self.current_highscore -= 1
+
     def on_click_card(self, card):
         info("Clicked card")
         debug(f"Clicked: {card.get_card_text()}")
-        current_score = self.parent.get_current_score()
+        current_score = self.current_score
         card_obj = card.get_card()
         card_value = card_obj['value']
         card_index = card_obj['index']
         if card.operator == '+':
             debug(
                 f"Addition -> round(current_score+card_value, 1) = {round(current_score+card_value, 1)}")
-            self.parent.set_current_score(round(current_score+card_value, 1))
+            self.set_current_score(round(current_score+card_value, 1))
         elif card.operator == '-':
             debug(f"Subtraction -> round(current_score+card_value, 1) = {
                   round(current_score-card_value, 1)}")
-            self.parent.set_current_score(round(current_score-card_value, 1))
+            self.set_current_score(round(current_score-card_value, 1))
         elif card.operator == '*':
             debug(f"Multiplication -> round(current_score*card_value, 1) = {
                   round(current_score*card_value, 1)}")
-            self.parent.set_current_score(round(current_score*card_value, 1))
+            self.set_current_score(round(current_score*card_value, 1))
         elif card.operator == '/':
             debug(
                 f"Division -> round(current_score/card_value, 1) = {round(current_score/card_value, 1)}")
-            self.parent.set_current_score(round(current_score/card_value, 1))
+            self.set_current_score(round(current_score/card_value, 1))
         elif card.operator == 'round_up':
             debug(
                 f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
-            self.parent.set_current_score(math.ceil(current_score))
+            self.set_current_score(math.ceil(current_score))
         elif card.operator == 'round_down':
             debug(
                 f"Round down -> math.floor(current_score) = {math.floor(current_score)}")
-            self.parent.set_current_score(math.floor(current_score))
+            self.set_current_score(math.floor(current_score))
 
         if card_index == 0:
             self.reinit_card(self.card1)
@@ -290,24 +291,24 @@ class Game1(tb.Frame):
             self.reinit_card(self.card4)
             debug(f"Card 4 is now: {self.card4.get_card().get_card_text()}")
 
-        self.parent.update_current_highscore()
-        self.current_score.change_label(text=self.parent.get_current_score())
+        self.update_current_highscore()
+        self.current_score_label.change_label(text=self.current_score)
         self.current_highscore_label.change_label(
-            text=f"Score: {self.parent.get_current_highscore()}")
-        debug(f"Current score is now: {self.parent.get_current_score()}")
+            text=f"Score: {self.current_highscore}")
+        debug(f"Current score is now: {self.current_score}")
 
-        if self.parent.game_over():
+        if self.game_over():
             info('Game ended')
             self.win_label.change_label('You win!')
             self.disable_cards()
             self.try_again_button.grid(row=0, column=4)
-            current_highscore = self.parent.get_current_highscore()
-            highscore = self.parent.get_highscore()
-            if current_highscore > highscore:
-                self.parent.set_highscore(current_highscore)
+            if self.current_highscore > self.highscore:
+                self.parent.set_highscore("game1", self.current_highscore)
                 self.highscore_label.change_label(
-                    f'Highscore: {current_highscore}')
+                    f'Highscore: {self.current_highscore}')
 
+    def game_over(self):
+        return self.target_score == self.current_score
 
 class Card():
     def __init__(self, card_type: str, index: int, min_value=1, max_value=50):
@@ -449,7 +450,6 @@ class CardButton(tb.Frame):
         debug(f"Card style is now: {style}")
 
 
-
 class Label(tb.Frame):
     def __init__(self, parent, row_and_column: tuple, text: str, customizations=None):
         '''
@@ -479,7 +479,8 @@ class Label(tb.Frame):
 
         row, col = row_and_column
 
-        self.label = tb.Label(parent, text=text, justify=justify, font=font, padding=padding)
+        self.label = tb.Label(
+            parent, text=text, justify=justify, font=font, padding=padding)
         self.label.grid(row=row, column=col, columnspan=colspan, sticky=sticky)
 
     def change_label(self, text: str):
