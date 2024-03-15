@@ -363,23 +363,28 @@ class Game2(tb.Frame):
         # Init board
         self.board = []
         for row in range(10):
-            row_label = Label(self.frame, row_and_column=(row, 0), text='.', customizations={'padding': 5})
-            self.board.append(row_label)
             for column in range(10):
-                column_label = Label(self.frame, row_and_column=(row, column), text='.', customizations={'padding': 5})
+                column_label = Label(self.frame, row_and_column=(row, column), text='_', customizations={'padding': '1 -4'})
                 self.board.append(column_label)
 
         self.worm = self.Worm(self, self.frame)
-        #Label(self.frame, row_and_column=(0,1), text="o")
-        #Label(self.frame, row_and_column=(0,0), text="o")
-        #Label(self.frame, row_and_column=(0,2), text="o")
-        #Label(self.frame, row_and_column=(0,3), text="o")
     
-    def spawn_food(self):
+    def spawn_food(self, test=False):
+        if test:
+            debug("Test spawn enabled, spawning to 3,0")
+            for child in self.board:
+                row, col = child.get_row_and_column()
+
+                if row == 0 and col == 0:
+                    print(child)
+                    child.change_label('*')
+                    self.food_position = (0, 1)
+                    break
+            return
         free_spots = []
         for child in self.board:
             spot_char = child.get_text()
-            if spot_char == ".":
+            if spot_char == "_":
                 row, col = child.get_row_and_column()
                 free_spots.append((row,col))
             else:
@@ -402,9 +407,9 @@ class Game2(tb.Frame):
         self.current_movement_dir = direction
 
     def update_frame(self):
-        self.t = threading.Timer(0.4, self.update_frame)
+        self.t = threading.Timer(0.8, self.update_frame)
         self.t.start()
-        self.passed_time += 0.4
+        self.passed_time += 0.8
         print("timer working", self.passed_time)
         self.worm.update_position(self.current_movement_dir)
 
@@ -422,7 +427,7 @@ class Game2(tb.Frame):
         self.frame_top_right.grid(column=1, row=0, sticky=NE)
         self.frame.grid(column=0, row=1, sticky=N)
         self.update_frame()
-        self.spawn_food()
+        self.spawn_food(test=False)
 
     def play_again(self):
         info("Play again button pressed")
@@ -446,18 +451,17 @@ class Game2(tb.Frame):
             row, col = child.get_row_and_column()
             if child.get_text() == "*":
                 debug("removing food ", )
-                child.change_label('.')
+                child.change_label('_')
                 break
         self.spawn_food()
     
     class Worm(tb.Frame):
-        def __init__(self, root, parent, length=1, char="o"):
+        def __init__(self, root, parent, length=1, char="O"):
             self.root = root
             self.length = length
             self.char = char
             self.position = [[0,1]]
             self.parent = parent
-            #self.worm_labels = []
             self.worm1 = tb.Label(self.parent, text=self.char)
             self.worm1.grid(row=0, column=1)
 
