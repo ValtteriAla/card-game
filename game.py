@@ -321,6 +321,10 @@ class Game1(tb.Frame):
         return self.target_score == self.current_score
 
 
+# TODO:
+# - When growing the location is wrong sometimes:
+#   - must watch the previous worm-part movement direction istead of the first worm-part
+
 class Game2(tb.Frame):
     def __init__(self, parent):
         '''
@@ -371,14 +375,13 @@ class Game2(tb.Frame):
     
     def spawn_food(self, test=False):
         if test:
-            debug("Test spawn enabled, spawning to 3,0")
+            debug("Test spawn enabled, spawning to 5,0")
             for child in self.board:
                 row, col = child.get_row_and_column()
 
-                if row == 0 and col == 0:
-                    print(child)
+                if row == 5 and col == 0:
                     child.change_label('*')
-                    self.food_position = (0, 1)
+                    self.food_position = (5, 0)
                     break
             return
         free_spots = []
@@ -410,7 +413,7 @@ class Game2(tb.Frame):
         self.t = threading.Timer(0.8, self.update_frame)
         self.t.start()
         self.passed_time += 0.8
-        print("timer working", self.passed_time)
+        info(f"Frame updated, passed time: {self.passed_time}s")
         self.worm.update_position(self.current_movement_dir)
 
     def quit_game(self):
@@ -488,36 +491,38 @@ class Game2(tb.Frame):
             col_diff = 0
             if current_dir == "RIGHT":
                 col_diff -= 1
+            elif current_dir == "LEFT":
+                col_diff += 1
+            elif current_dir == "UP":
+                row_diff +=1
+            elif current_dir == "DOWN":
+                row_diff -=1
+
 
             if self.length == 2:
                 row = row_diff + self.position[0][0]
                 col = col_diff + self.position[0][1]
                 self.position.append([row, col])
-                print("POS GROW_WORM: ", self.position)
                 self.worm2.grid(row=row, column=col)
             elif self.length == 3:
                 row = row_diff + self.position[1][0]
                 col = col_diff + self.position[1][1]
                 self.position.append([row, col])
-                print("POS GROW_WORM: ", self.position)
                 self.worm3.grid(row=row, column=col)
             elif self.length == 4:
                 row = row_diff + self.position[2][0]
                 col = col_diff + self.position[2][1]
                 self.position.append([row, col])
-                print("POS GROW_WORM: ", self.position)
                 self.worm4.grid(row=row, column=col)
             elif self.length == 5:
                 row = row_diff + self.position[3][0]
                 col = col_diff + self.position[3][1]
                 self.position.append([row, col])
-                print("POS GROW_WORM: ", self.position)
                 self.worm5.grid(row=row, column=col)
             elif self.length == 6:
                 row = row_diff + self.position[4][0]
                 col = col_diff + self.position[4][1]
                 self.position.append([row, col])
-                print("POS GROW_WORM: ", self.position)
                 self.worm6.grid(row=row, column=col)
 
         def add_length(self):
@@ -532,7 +537,6 @@ class Game2(tb.Frame):
             old_pos_row = 0
             old_pos_col = 0
             for pos in self.position:
-                print("original position: ", pos)
                 temp_row = pos[0]
                 temp_col = pos[1]
                 if curr_worm == 0:
@@ -564,7 +568,6 @@ class Game2(tb.Frame):
 
                 old_pos_row = temp_row
                 old_pos_col = temp_col
-                print("old position: ", old_pos_row, old_pos_col)
 
                 curr_worm +=1
 
