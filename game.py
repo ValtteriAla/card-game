@@ -4,6 +4,7 @@ from random import randint, choice
 import math
 import logging
 from logging import debug, info, error
+import threading
 import json
 
 
@@ -35,7 +36,8 @@ class App(tb.Window):
 
         self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
-        self.game1 = None
+        self.game1 = Game1(self)
+        self.game2 = Game2(self)
         self.mainloop()
 
     def get_highscores(self) -> dict:
@@ -70,13 +72,17 @@ class App(tb.Window):
         return self.current_highscore
 
     def change_window(self, window: str):
+        self.main.hide()
+        self.game1.hide()
+        self.game2.hide()
         if window == "game1":
-            self.game1 = Game1(self)
+            self.game1.show()
+        elif window == "game2":
+            self.game2.show()
         elif window == "main":
-            self.main = Main(self)
+            self.main.show()
         else:
-            self.main = Main(self)
-
+            self.main.show()
 
 class Main(tb.Frame):
     def __init__(self, parent):
@@ -90,29 +96,40 @@ class Main(tb.Frame):
         self.frame_games = tb.Frame(self.parent)
         self.frame.grid(column=0, row=0)
         self.frame_games.grid(column=0, row=1)
-        self.header = Label(self.frame, (0, 4), "Game Arcade",
+        self.header = Label(self.frame, (0, 0), "Game Arcade",
                             customizations={"font": ('Helvetica', 24),
                                             "justify": CENTER, "columnspan": 3,
                                             "padding": 20})
 
-        self.game1_button = tb.Button(
-            self.frame, text="Game 1", padding=5, command=lambda: self.on_click_game_button("game1"))
+        self.game1_button = tb.Button(self.frame, text="Game 1",
+                                      padding=5,
+                                      command=lambda: self.on_click_game_button("game1"))
+        self.game2_button = tb.Button(self.frame, text="Game 2",
+                                      padding=5,
+                                      command=lambda: self.on_click_game_button("game2"))
         self.game1_button.grid(row=1, column=0, padx=20, pady=20)
+        self.game2_button.grid(row=1, column=1, padx=20, pady=20)
 
     def on_click_game_button(self, game: str):
+        debug(f"onclick game_button: {game}")
         self.parent.change_window(game)
-        self.destroy()
 
-    def destroy(self):
-        self.frame.destroy()
-        self.header.destroy()
-        self.game1_button.destroy()
+    def hide(self):
+        debug("Hide main window")
+        self.frame.grid_remove()
+        self.header.grid_remove()
 
+    def show(self):
+        debug("Show main window")
+        self.frame.grid(column=0, row=0)
+        self.header.grid(column=0, row=0)
 
 class Game1(tb.Frame):
     def __init__(self, parent, starting_score=100, target_score=0, max_highscore=100):
         '''
         # Game 1 window
+        Window is hidden by default. Can be initialized by using show() and hidden by using hide()
+        ## Description
         'Goal', 'Current Score' and 'You win' labels are on first row.
         'Try again' button appears when game is over.
         Buttons 1-4 are on second row in a form of a card.
@@ -126,17 +143,11 @@ class Game1(tb.Frame):
         self.max_highscore = max_highscore
         self.current_highscore = self.max_highscore
 
-
         default_button_width = 30
         self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
         self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
         self.frame = tb.Frame(self.parent, padding=0, width=2)
         self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
-
-        self.frame_top_left.grid(column=0, row=0, sticky=NW)
-        self.frame_top_right.grid(column=0, row=0, sticky=NE)
-        self.frame.grid(column=0, row=1, sticky=N)
-        self.frame_cards.grid(column=0, row=2, sticky=N)
 
         self.back_button = tb.Button(
             self.frame_top_left, text="Quit", command=lambda: self.quit_game())
@@ -163,19 +174,18 @@ class Game1(tb.Frame):
 
     def quit_game(self):
         self.parent.change_window("main")
-        self.destroy_self()
 
-    def destroy_self(self):
-        self.frame.destroy()
-        self.frame_cards.destroy()
-        self.frame_top_left.destroy()
-        self.frame_top_right.destroy()
-        self.win_label.destroy()
-        self.goal_label.destroy()
-        self.try_again_button.destroy()
-        self.current_score_label.destroy()
-        self.back_button.destroy()
-        self.highscore_label.destroy()
+    def hide(self):
+        self.frame.grid_remove()
+        self.frame_cards.grid_remove()
+        self.frame_top_left.grid_remove()
+        self.frame_top_right.grid_remove()
+
+    def show(self):
+        self.frame_top_left.grid(column=0, row=0, sticky=NW)
+        self.frame_top_right.grid(column=0, row=0, sticky=NE)
+        self.frame.grid(column=0, row=1, sticky=N)
+        self.frame_cards.grid(column=0, row=2, sticky=N)
 
     def play_again(self):
         info("Play again button pressed")
@@ -309,6 +319,254 @@ class Game1(tb.Frame):
 
     def game_over(self):
         return self.target_score == self.current_score
+
+
+class Game2(tb.Frame):
+    def __init__(self, parent):
+        '''
+        # Game 2 window
+        Window is hidden by default. Can be initialized by using show() and hidden by using hide()
+        ## Description
+        '''
+        self.parent = parent
+        self.highscore = self.parent.get_highscore("game1")
+
+        self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
+        self.frame_top_right = tb.Frame(self.parent, padding=10, width=10)
+        self.frame = tb.Frame(self.parent, padding=0, width=0)
+
+        self.back_button = tb.Button(self.frame_top_left, text="Quit",
+                                     command=lambda: self.quit_game())
+        self.back_button.grid(row=0, column=0)
+
+        self.go_right_button = tb.Button(self.frame_top_right, text="Move Right",
+                                        command=lambda: self.set_movement_direction("RIGHT"))
+
+        self.go_left_button = tb.Button(self.frame_top_right, text="Move Left",
+                                        command=lambda: self.set_movement_direction("LEFT"))
+        self.go_left_button.grid(row=0, column=0)
+        self.go_right_button.grid(row=0, column=1)
+
+        self.go_up_button = tb.Button(self.frame_top_right, text="Move Up",
+                                        command=lambda: self.set_movement_direction("UP"))
+
+        self.go_down_button = tb.Button(self.frame_top_right, text="Move Down",
+                                        command=lambda: self.set_movement_direction("DOWN"))
+        self.go_up_button.grid(row=1, column=0, pady=5)
+        self.go_down_button.grid(row=1, column=1, pady=5)
+
+        self.current_movement_dir = "RIGHT"
+        self.passed_time = 0
+        self.t = None
+        self.food_position = (0,8)
+
+        # Init board
+        self.board = []
+        for row in range(10):
+            row_label = Label(self.frame, row_and_column=(row, 0), text='.', customizations={'padding': 5})
+            self.board.append(row_label)
+            for column in range(10):
+                column_label = Label(self.frame, row_and_column=(row, column), text='.', customizations={'padding': 5})
+                self.board.append(column_label)
+
+        self.worm = self.Worm(self, self.frame)
+        #Label(self.frame, row_and_column=(0,1), text="o")
+        #Label(self.frame, row_and_column=(0,0), text="o")
+        #Label(self.frame, row_and_column=(0,2), text="o")
+        #Label(self.frame, row_and_column=(0,3), text="o")
+    
+    def spawn_food(self):
+        free_spots = []
+        for child in self.board:
+            spot_char = child.get_text()
+            if spot_char == ".":
+                row, col = child.get_row_and_column()
+                free_spots.append((row,col))
+            else:
+                debug(f"Not a free spot: {child.get_row_and_column()}")
+            
+        choose_spot = choice(free_spots)
+
+        for child in self.board:
+            row, col = child.get_row_and_column()
+
+            if row == choose_spot[0] and col == choose_spot[1]:
+                debug("Spawning food: ", )
+                child.change_label('*')
+                self.food_position = (choose_spot[0], choose_spot[1])
+                break
+
+        debug(f"FOOD POS:{self.food_position}")
+
+    def set_movement_direction(self, direction: str):
+        self.current_movement_dir = direction
+
+    def update_frame(self):
+        self.t = threading.Timer(0.4, self.update_frame)
+        self.t.start()
+        self.passed_time += 0.4
+        print("timer working", self.passed_time)
+        self.worm.update_position(self.current_movement_dir)
+
+    def quit_game(self):
+        self.t.cancel()
+        self.parent.change_window("main")
+
+    def hide(self):
+        self.frame.grid_remove()
+        self.frame_top_left.grid_remove()
+        self.frame_top_right.grid_remove()
+
+    def show(self):
+        self.frame_top_left.grid(column=0, row=0, sticky=NW)
+        self.frame_top_right.grid(column=1, row=0, sticky=NE)
+        self.frame.grid(column=0, row=1, sticky=N)
+        self.update_frame()
+        self.spawn_food()
+
+    def play_again(self):
+        info("Play again button pressed")
+
+    def set_current_highscore(self, value: int):
+        if self.current_highscore > self.highscore:
+            self.highscore = self.current_highscore
+            self.parent.set_highscore("game1", self.highscore)
+
+    def reset_current_highscore(self):
+        self.current_highscore = self.max_highscore
+
+    def update_current_highscore(self):
+        if self.current_highscore > 0:
+            self.current_highscore -= 1
+
+    def game_over(self):
+        pass
+    def food_eaten(self):
+        for child in self.board:
+            row, col = child.get_row_and_column()
+            if child.get_text() == "*":
+                debug("removing food ", )
+                child.change_label('.')
+                break
+        self.spawn_food()
+    
+    class Worm(tb.Frame):
+        def __init__(self, root, parent, length=1, char="o"):
+            self.root = root
+            self.length = length
+            self.char = char
+            self.position = [[0,1]]
+            self.parent = parent
+            #self.worm_labels = []
+            self.worm1 = tb.Label(self.parent, text=self.char)
+            self.worm1.grid(row=0, column=1)
+
+            self.worm2 = tb.Label(self.parent, text=self.char)
+            self.worm3 = tb.Label(self.parent, text=self.char)
+            self.worm4 = tb.Label(self.parent, text=self.char)
+            self.worm5 = tb.Label(self.parent, text=self.char)
+            self.worm6 = tb.Label(self.parent, text=self.char)
+          
+            self.init_worm()
+
+        def eat_food(self):
+            food_pos = self.root.food_position
+
+            if food_pos == (self.position[0][0], self.position[0][1]):
+                debug("EAT FOOD")
+                self.root.food_eaten()
+                self.add_length()
+                self.grow_worm()
+
+        def grow_worm(self):
+            current_dir = self.root.current_movement_dir
+            row_diff = 0
+            col_diff = 0
+            if current_dir == "RIGHT":
+                col_diff -= 1
+
+            if self.length == 2:
+                row = row_diff + self.position[0][0]
+                col = col_diff + self.position[0][1]
+                self.position.append([row, col])
+                print("POS GROW_WORM: ", self.position)
+                self.worm2.grid(row=row, column=col)
+            elif self.length == 3:
+                row = row_diff + self.position[1][0]
+                col = col_diff + self.position[1][1]
+                self.position.append([row, col])
+                print("POS GROW_WORM: ", self.position)
+                self.worm3.grid(row=row, column=col)
+            elif self.length == 4:
+                row = row_diff + self.position[2][0]
+                col = col_diff + self.position[2][1]
+                self.position.append([row, col])
+                print("POS GROW_WORM: ", self.position)
+                self.worm4.grid(row=row, column=col)
+            elif self.length == 5:
+                row = row_diff + self.position[3][0]
+                col = col_diff + self.position[3][1]
+                self.position.append([row, col])
+                print("POS GROW_WORM: ", self.position)
+                self.worm5.grid(row=row, column=col)
+            elif self.length == 6:
+                row = row_diff + self.position[4][0]
+                col = col_diff + self.position[4][1]
+                self.position.append([row, col])
+                print("POS GROW_WORM: ", self.position)
+                self.worm6.grid(row=row, column=col)
+
+        def add_length(self):
+            self.length += 1
+
+        def init_worm(self):
+            pass
+        
+        def update_position(self, direction:str):
+            debug(f"Moved: {direction}")
+            curr_worm = 0
+            old_pos_row = 0
+            old_pos_col = 0
+            for pos in self.position:
+                print("original position: ", pos)
+                temp_row = pos[0]
+                temp_col = pos[1]
+                if curr_worm == 0:
+                    if direction == "LEFT" and pos[1] > 0:
+                        pos[1] -=1 
+                    if direction == "RIGHT" and pos[1] < 9:
+                        pos[1] +=1 
+                    if direction == "UP" and pos[0] > 0:
+                        pos[0] -=1 
+                    if direction == "DOWN" and pos[0] < 9:
+                        pos[0] +=1
+                else:
+                    pos[0] = old_pos_row
+                    pos[1] = old_pos_col
+
+                debug(f"Pos {curr_worm}: {pos}")
+                if curr_worm == 0:
+                    self.worm1.grid_configure(row=pos[0], column=pos[1])
+                if curr_worm == 1:
+                    self.worm2.grid_configure(row=old_pos_row, column=old_pos_col)
+                if curr_worm == 2:
+                    self.worm3.grid_configure(row=old_pos_row, column=old_pos_col)
+                if curr_worm == 3:
+                    self.worm4.grid_configure(row=old_pos_row, column=old_pos_col)
+                if curr_worm == 4:
+                    self.worm5.grid_configure(row=old_pos_row, column=old_pos_col)
+                if curr_worm == 5:
+                    self.worm6.grid_configure(row=old_pos_row, column=old_pos_col)
+
+                old_pos_row = temp_row
+                old_pos_col = temp_col
+                print("old position: ", old_pos_row, old_pos_col)
+
+                curr_worm +=1
+
+            self.eat_food()
+
+
 
 class Card():
     def __init__(self, card_type: str, index: int, min_value=1, max_value=50):
@@ -477,15 +735,20 @@ class Label(tb.Frame):
         font = default_customizations['font']
         padding = default_customizations['padding']
 
-        row, col = row_and_column
+        self.row, self.col = row_and_column
 
         self.label = tb.Label(
             parent, text=text, justify=justify, font=font, padding=padding)
-        self.label.grid(row=row, column=col, columnspan=colspan, sticky=sticky)
+        self.label.grid(row=self.row, column=self.col, columnspan=colspan, sticky=sticky)
 
     def change_label(self, text: str):
         self.label.configure(text=text)
 
+    def get_text(self):
+        return self.label.cget("text")
+
+    def get_row_and_column(self):
+        return (self.row, self.col)
 
 App(title='Awesome Card Game v0.3', theme="superhero", size=(
-    600, 350), logging_level=logging.DEBUG)
+    600, 650), logging_level=logging.DEBUG)
