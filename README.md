@@ -33,7 +33,9 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - Finish worm game by adding the following:
     - Game end mechanic (Moves to wall or through itself)
     - highscore and storing this highscore
-    - maybe sounds
-    - styling could be better
+    - ~~maybe sounds~~ later versions
+    - ~~styling could be better~~ later versions
+    - Rework worm grow to be dynamic (maybe class implementation)
+    - fix small bugs found in the game.py TODO sections
 
 

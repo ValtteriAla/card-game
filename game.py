@@ -465,6 +465,7 @@ class Game2(tb.Frame):
         self.board = self.init_board()
 
         self.worm = self.Worm(self, self.frame)
+        
 
     def init_board(self) -> List:
         board = []
@@ -487,7 +488,7 @@ class Game2(tb.Frame):
 
                 if row == 5 and col == 0:
                     child.change_label('*')
-                    self.food_position = (5, 0)
+                    self.food_position = [5, 0]
                     break
             return
         free_spots = []
@@ -509,7 +510,7 @@ class Game2(tb.Frame):
                     'Spawning food: ',
                 )
                 child.change_label('*')
-                self.food_position = (choose_spot[0], choose_spot[1])
+                self.food_position = [choose_spot[0], choose_spot[1]]
                 break
 
         debug(f'FOOD POS:{self.food_position}')
@@ -541,6 +542,7 @@ class Game2(tb.Frame):
         self.passed_time += self.game_speed
         info(f'Frame updated, passed time: {self.passed_time}s')
         self.worm.update_position(self.current_movement_dir, self.previous_movement_dir)
+        self.game_over()
 
     def quit_game(self) -> None:
         self.t.cancel()  # type: ignore
@@ -573,10 +575,14 @@ class Game2(tb.Frame):
         if self.current_highscore > 0:
             self.current_highscore -= 1
 
-    # TODO:
-    # Implement game end
     def game_over(self) -> None:
-        pass
+        worms = self.worm.get_worm()
+        first_worm = worms[0]
+        first_worm_pos = first_worm.get_position()
+        for worm in worms[1:]:
+            if worm.get_position() == first_worm_pos:
+                print("Game Over")
+                self.t.cancel()
 
     def food_eaten(self) -> None:
         for child in self.board:
@@ -587,32 +593,32 @@ class Game2(tb.Frame):
         self.spawn_food()
 
     class Worm(tb.Frame):
-        def __init__(self, root, parent, length=1, char='O') -> None:
+        def __init__(self, root, parent, char='O') -> None:
             self.root = root
-            self.length = length
+            #self.length = length
             self.char = char
-            self.position = [[0, 1]]
+            self.position = [0, 1]
             self.parent = parent
-            self.worm1 = tb.Label(self.parent, text=self.char)
-            self.worm1.grid(row=0, column=1)
+            self.worm = []
+            self.worm.append(self.WormChild(self.parent, [0, 1], char=char, current_movement_dir=root.current_movement_dir))
 
-            self.worm2 = tb.Label(self.parent, text=self.char)
-            self.worm3 = tb.Label(self.parent, text=self.char)
-            self.worm4 = tb.Label(self.parent, text=self.char)
-            self.worm5 = tb.Label(self.parent, text=self.char)
-            self.worm6 = tb.Label(self.parent, text=self.char)
-
+        def get_worm(self) -> list:
+            return self.worm
+        
         def eat_food(self) -> None:
             food_pos = self.root.food_position
-
-            if food_pos == (self.position[0][0], self.position[0][1]):
+            first_worm = self.worm[0]
+            first_worm_pos = first_worm.get_position()
+            if food_pos == first_worm_pos:
                 debug('EAT FOOD')
                 self.root.food_eaten()
-                self.add_length()
+                #self.add_length()
                 self.grow_worm()
 
         def grow_worm(self) -> None:
-            current_dir = self.root.current_movement_dir
+            last_worm = self.worm[-1]
+            current_dir = last_worm.get_movement_direction()
+            
             row_diff = 0
             col_diff = 0
             if current_dir == 'RIGHT':
@@ -623,93 +629,98 @@ class Game2(tb.Frame):
                 row_diff += 1
             elif current_dir == 'DOWN':
                 row_diff -= 1
-
-            if self.length == 2:
-                row = row_diff + self.position[0][0]
-                col = col_diff + self.position[0][1]
-                self.position.append([row, col])
-                self.worm2.grid(row=row, column=col)
-            elif self.length == 3:
-                row = row_diff + self.position[1][0]
-                col = col_diff + self.position[1][1]
-                self.position.append([row, col])
-                self.worm3.grid(row=row, column=col)
-            elif self.length == 4:
-                row = row_diff + self.position[2][0]
-                col = col_diff + self.position[2][1]
-                self.position.append([row, col])
-                self.worm4.grid(row=row, column=col)
-            elif self.length == 5:
-                row = row_diff + self.position[3][0]
-                col = col_diff + self.position[3][1]
-                self.position.append([row, col])
-                self.worm5.grid(row=row, column=col)
-            elif self.length == 6:
-                row = row_diff + self.position[4][0]
-                col = col_diff + self.position[4][1]
-                self.position.append([row, col])
-                self.worm6.grid(row=row, column=col)
-
-        def add_length(self) -> None:
-            self.length += 1
+            
+            
+            last_worm_pos = last_worm.get_position()
+            row = row_diff + last_worm_pos[0]
+            col = col_diff + last_worm_pos[1]
+            new_worm = self.WormChild(self.parent, [row, col], 'O', current_dir)
+            self.worm.append(new_worm)
 
         def update_position(self, direction: str, previous_direction: str) -> None:
             debug(f'Moved: {direction}, prev: {previous_direction}')
-            curr_worm = 0
-            old_pos_row = 0
-            old_pos_col = 0
-            for pos in self.position:
-                temp_row = pos[0]
-                temp_col = pos[1]
-                if curr_worm == 0:
-                    # Change to be variables (max borders)
+
+            first_worm = True
+            prev_pos = [0, 1]
+            for worm in self.worm:
+                curr_pos = worm.get_position().copy()
+                debug(f"CURR_POS: {curr_pos}")
+
+                if first_worm:
+                    prev_pos = worm.get_position()
                     if direction == 'LEFT':
-                        if pos[1] > 0:
-                            pos[1] -= 1
+                        if curr_pos[1] > 0:
+                            curr_pos[1] -= 1
                         else:
-                            pos[1] = 9
+                            curr_pos[1] = 9
                     # Change to be variables (max borders)
                     if direction == 'RIGHT':
-                        if pos[1] < 9:
-                            pos[1] += 1
+                        if curr_pos[1] < 9:
+                            curr_pos[1] += 1
                         else:
-                            pos[1] = 0
+                            curr_pos[1] = 0
                     # Change to be variables (max borders)
                     if direction == 'UP':
-                        if pos[0] > 0:
-                            pos[0] -= 1
+                        if curr_pos[0] > 0:
+                            curr_pos[0] -= 1
                         else:
-                            pos[0] = 9
+                            curr_pos[0] = 9
                     # Change to be variables (max borders)
                     if direction == 'DOWN':
-                        if pos[0] < 9:
-                            pos[0] += 1
+                        if curr_pos[0] < 9:
+                            curr_pos[0] += 1
                         else:
-                            pos[0] = 0
+                            curr_pos[0] = 0
                 else:
-                    pos[0] = old_pos_row
-                    pos[1] = old_pos_col
+                    curr_pos = prev_pos
+                    prev_pos = worm.get_position()
+                
 
-                debug(f'Pos {curr_worm}: {pos}')
-                if curr_worm == 0:
-                    self.worm1.grid_configure(row=pos[0], column=pos[1])
-                if curr_worm == 1:
-                    self.worm2.grid_configure(row=old_pos_row, column=old_pos_col)
-                if curr_worm == 2:
-                    self.worm3.grid_configure(row=old_pos_row, column=old_pos_col)
-                if curr_worm == 3:
-                    self.worm4.grid_configure(row=old_pos_row, column=old_pos_col)
-                if curr_worm == 4:
-                    self.worm5.grid_configure(row=old_pos_row, column=old_pos_col)
-                if curr_worm == 5:
-                    self.worm6.grid_configure(row=old_pos_row, column=old_pos_col)
+                worm.change_position(curr_pos)
 
-                old_pos_row = temp_row
-                old_pos_col = temp_col
-
-                curr_worm += 1
+                first_worm = False
+                
+                debug(f'Pos {worm}: {curr_pos}')
 
             self.eat_food()
+
+        class WormChild():
+            def __init__(self, parent, position: list, char: str, current_movement_dir: str | None = None) -> None:
+                self.char = char
+                self.position = position
+                self.parent = parent
+                self.worm_label = tb.Label(self.parent, text=self.char)
+                self.worm_label.grid(row=position[0], column=position[1])
+                self.movement_direction = current_movement_dir
+            
+            def change_position(self, position: list) -> None:
+                self.set_movement_direction(position)
+                self.position = position
+                self.worm_label.grid_configure(row=position[0], column=position[1])
+
+            def get_position(self) -> list:
+                return self.position
+            
+            def get_movement_direction(self) -> str:
+                return self.movement_direction
+
+            def set_movement_direction(self, position: list) -> None:
+                print("Positions: ", position, self.position)
+                if position[0] != self.position[0]:
+                    if (position[0] - self.position[0]) > 0:
+                        self.movement_direction = "DOWN"
+                    else:
+                        self.movement_direction = "UP"
+                else:
+                    if (position[1] - self.position[1]) > 0:
+                        self.movement_direction = "RIGHT"
+                    else:
+                        self.movement_direction = "LEFT"
+
+                print("UPDATED WORM DIRECTION: ", self.movement_direction)
+
+
+
 
 
 class Card:
@@ -924,5 +935,5 @@ App(
     title='Awesome Card Game v0.3',
     theme='superhero',
     size=(600, 650),
-    logging_level=logging.DEBUG,
+    logging_level=logging.INFO,
 )
