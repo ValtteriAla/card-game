@@ -1,3 +1,4 @@
+from ast import List
 import ttkbootstrap as tb  # type: ignore
 from ttkbootstrap.constants import DISABLED, ACTIVE, CENTER, NW, NE, N  # type: ignore
 from random import randint, choice
@@ -7,11 +8,16 @@ from logging import debug, info, error
 import threading
 import json
 from typing import Callable
+import os
 
 
 class App(tb.Window):
     def __init__(
-        self, title: str, size: tuple, theme="darkly", logging_level=logging.INFO
+        self,
+        title: str,
+        size: tuple,
+        theme='darkly',
+        logging_level=logging.INFO,
     ) -> None:
         """
         # Main window
@@ -30,29 +36,39 @@ class App(tb.Window):
         """
         super().__init__(themename=theme)
         logging.basicConfig(
-            format="%(asctime)s %(levelname)s: %(message)s",
-            datefmt="%I:%M:%S",
+            format='%(asctime)s %(levelname)s: %(message)s',
+            datefmt='%I:%M:%S',
             level=logging_level,
         )
         self.title(title)
-        self.geometry(f"{size[0]}x{size[1]}")
+        self.geometry(f'{size[0]}x{size[1]}')
         self.minsize(size[0], size[1])
+        self.highscore_path = self.get_highscore_path()
         self.highscores = self.get_highscores()
 
-        self.style.configure("TButton", font=("Helvetica", 18))
+        self.style.configure('TButton', font=('Helvetica', 18))
         self.main = Main(self)
         self.game1 = Game1(self)
         self.game2 = Game2(self)
         self.mainloop()
 
+    def get_highscore_path(self) -> str:
+        path_arr = os.path.abspath(__file__).split("\\")[:-1]
+        folder_path = "/".join(path_arr)
+        file_path = folder_path + '/highscores.json'
+        print(file_path)
+        return file_path
+
     def get_highscores(self) -> dict:
+        print(self.highscore_path)
         try:
-            with open("highscores.json", "r") as f:
+            with open(self.highscore_path, 'r') as f:
                 highscores = json.load(f)
+                print(highscores)
                 return highscores
         except Exception as e:
             error(e)
-            return {"game1": 0}
+            return {'game1': 0}
 
     def get_highscore(self, game: str) -> int:
         if self.highscores.get(game):
@@ -64,11 +80,12 @@ class App(tb.Window):
     def get_current_highscore(self) -> int:
         return self.current_highscore
 
+    # Writes to file
     def set_highscore(self, game: str, value: int) -> None:
         try:
             self.highscores[game] = value
-            with open("highscores.json", "w") as f:
-                debug(f"Writing to json: {self.highscores}")
+            with open(self.highscore_path, 'w') as f:
+                debug(f'Writing to json: {self.highscores}')
                 json.dump(self.highscores, f)
         except Exception as e:
             error(e)
@@ -78,11 +95,11 @@ class App(tb.Window):
         self.main.hide()
         self.game1.hide()
         self.game2.hide()
-        if window == "game1":
+        if window == 'game1':
             self.game1.show()
-        elif window == "game2":
+        elif window == 'game2':
             self.game2.show()
-        elif window == "main":
+        elif window == 'main':
             self.main.show()
         else:
             self.main.show()
@@ -103,41 +120,41 @@ class Main(tb.Frame):
         self.header = Label(
             self.frame,
             (0, 0),
-            "Game Arcade",
+            'Game Arcade',
             customizations={
-                "font": ("Helvetica", 24),
-                "justify": CENTER,
-                "columnspan": 3,
-                "padding": 20,
+                'font': ('Helvetica', 24),
+                'justify': CENTER,
+                'columnspan': 3,
+                'padding': 20,
             },
         )
 
         self.game1_button = tb.Button(
             self.frame,
-            text="Game 1",
+            text='Game 1',
             padding=5,
-            command=lambda: self.on_click_game_button("game1"),
+            command=lambda: self.on_click_game_button('game1'),
         )
         self.game2_button = tb.Button(
             self.frame,
-            text="Game 2",
+            text='Game 2',
             padding=5,
-            command=lambda: self.on_click_game_button("game2"),
+            command=lambda: self.on_click_game_button('game2'),
         )
         self.game1_button.grid(row=1, column=0, padx=20, pady=20)
         self.game2_button.grid(row=1, column=1, padx=20, pady=20)
 
     def on_click_game_button(self, game: str) -> None:
-        debug(f"onclick game_button: {game}")
+        debug(f'onclick game_button: {game}')
         self.parent.change_window(game)
 
     def hide(self) -> None:
-        debug("Hide main window")
+        debug('Hide main window')
         self.frame.grid_remove()
         self.header.grid_remove()
 
     def show(self) -> None:
-        debug("Show main window")
+        debug('Show main window')
         self.frame.grid(column=0, row=0)
         self.header.grid(column=0, row=0)
 
@@ -159,7 +176,7 @@ class Game1(tb.Frame):
         self.target_score = target_score
         self.starting_score = starting_score
         self.current_score = starting_score
-        self.highscore = self.parent.get_highscore("game1")
+        self.highscore = self.parent.get_highscore('game1')
         self.max_highscore = max_highscore
         self.current_highscore = self.max_highscore
 
@@ -169,54 +186,52 @@ class Game1(tb.Frame):
         self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
 
         self.back_button = tb.Button(
-            self.frame_top_left, text="Quit", command=lambda: self.quit_game()
+            self.frame_top_left, text='Quit', command=lambda: self.quit_game()
         )
         self.back_button.grid(row=0, column=0)
 
         self.current_highscore_label = Label(
             self.frame_top_left,
             (0, 1),
-            f"Current score: {self.current_highscore}",
-            {"font": ("Arial", 14)},
+            f'Current score: {self.current_highscore}',
+            {'font': ('Arial', 14)},
         )
         self.highscore_label = Label(
             self.frame_top_right,
             (0, 0),
-            f"Highscore: {self.highscore}",
-            {"font": ("Arial", 14)},
+            f'Highscore: {self.highscore}',
+            {'font': ('Arial', 14)},
         )
 
-        self.win_label = Label(self.frame, (0, 0), "")
-        self.goal_label = Label(
-            self.frame, (1, 1), f"Goal: {self.target_score}")
+        self.win_label = Label(self.frame, (0, 0), '')
+        self.goal_label = Label(self.frame, (1, 1), f'Goal: {self.target_score}')
         self.try_again_button = tb.Button(
-            self.frame, text="Play again", command=self.play_again
+            self.frame, text='Play again', command=self.play_again
         )
         self.current_score_label = Label(
-            self.frame, (2, 1), f"Current: {self.current_score}"
+            self.frame, (2, 1), f'Current: {self.current_score}'
         )
-        self.card1 = self.init_card(self.frame_cards, 3, 0, "addition", 0)
-        self.card2 = self.init_card(self.frame_cards, 3, 1, "subtraction", 1)
-        self.card3 = self.init_card(
-            self.frame_cards, 3, 2, "multiplication", 2)
-        self.card4 = self.init_card(self.frame_cards, 3, 3, "division", 3)
+        self.card1 = self.init_card(self.frame_cards, 3, 0, 'addition', 0)
+        self.card2 = self.init_card(self.frame_cards, 3, 1, 'subtraction', 1)
+        self.card3 = self.init_card(self.frame_cards, 3, 2, 'multiplication', 2)
+        self.card4 = self.init_card(self.frame_cards, 3, 3, 'division', 3)
 
     def get_card_style(self, card_type: str) -> str:
-        if card_type == "multiplication" or card_type == "division":
-            return "custom.Success.TButton"
-        elif card_type == "round_up" or card_type == "round_down":
-            return "custom.Info.TButton"
+        if card_type == 'multiplication' or card_type == 'division':
+            return 'custom.Success.TButton'
+        elif card_type == 'round_up' or card_type == 'round_down':
+            return 'custom.Info.TButton'
         else:
-            return "custom.Primary.TButton"
+            return 'custom.Primary.TButton'
 
-    def init_card(self, frame, row=0, column=0, card_type="addition", card_index=0):
+    def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
         return CardButton(
             frame,
             (row, column),
             Card(card_type, card_index),
             customizations={
-                "on_click": self.on_click_card,
-                "style": self.get_card_style(card_type),
+                'on_click': self.on_click_card,
+                'style': self.get_card_style(card_type),
             },
         )
 
@@ -225,19 +240,19 @@ class Game1(tb.Frame):
 
     def quit_game(self) -> None:
         self.reset_game()
-        self.parent.change_window("main")
+        self.parent.change_window('main')
 
     def reset_game(self) -> None:
-        info("Reset game")
+        info('Reset game')
         self.current_highscore = self.max_highscore
         self.current_score = self.starting_score
-        self.reinit_card(self.card1, "addition")
-        self.reinit_card(self.card2, "subtraction")
-        self.reinit_card(self.card3, "multiplication")
-        self.reinit_card(self.card4, "division")
+        self.reinit_card(self.card1, 'addition')
+        self.reinit_card(self.card2, 'subtraction')
+        self.reinit_card(self.card3, 'multiplication')
+        self.reinit_card(self.card4, 'division')
 
         self.try_again_button.grid_remove()
-        self.win_label.change_label("")
+        self.win_label.change_label('')
         self.enable_cards()
         self.current_highscore_label.change_label(self.current_highscore)
         self.current_score_label.change_label(self.current_score)
@@ -255,36 +270,36 @@ class Game1(tb.Frame):
         self.frame_cards.grid(column=0, row=2, sticky=N)
 
     def play_again(self) -> None:
-        info("Play again button pressed")
+        info('Play again button pressed')
         self.try_again_button.grid_remove()
-        self.win_label.change_label("")
+        self.win_label.change_label('')
         self.set_current_score(self.starting_score)
         self.reset_current_highscore()
         self.current_highscore_label.change_label(self.current_highscore)
         self.current_score_label.change_label(self.current_score)
-        self.reinit_card(self.card1, "addition")
-        self.reinit_card(self.card2, "subtraction")
-        self.reinit_card(self.card3, "multiplication")
-        self.reinit_card(self.card4, "division")
+        self.reinit_card(self.card1, 'addition')
+        self.reinit_card(self.card2, 'subtraction')
+        self.reinit_card(self.card3, 'multiplication')
+        self.reinit_card(self.card4, 'division')
         self.enable_cards()
 
-    def set_current_highscore(self, value: int) -> None:
+    def set_current_highscore(self) -> None:
         if self.current_highscore > self.highscore:
             self.highscore = self.current_highscore
-            self.parent.set_highscore("game1", self.highscore)
+            self.parent.set_highscore('game1', self.highscore)
 
     def reset_current_highscore(self) -> None:
         self.current_highscore = self.max_highscore
 
     def disable_cards(self) -> None:
-        info("All cards disabled")
+        info('All cards disabled')
         self.card1.disable()
         self.card2.disable()
         self.card3.disable()
         self.card4.disable()
 
     def enable_cards(self) -> None:
-        info("All cards enabled")
+        info('All cards enabled')
         self.card1.enable()
         self.card2.enable()
         self.card3.enable()
@@ -302,9 +317,9 @@ class Game1(tb.Frame):
             self.current_score = value
 
     def reinit_card(self, card, operation=None) -> None:
-        info("Reiniting card")
+        info('Reiniting card')
         card_class = card.get_card()
-        debug(f"Reiniting card: {card_class}")
+        debug(f'Reiniting card: {card_class}')
         card_class.reinit_card(operation)
         card.update_text(self.get_card_style(card_class.card_type))
 
@@ -313,84 +328,83 @@ class Game1(tb.Frame):
             self.current_highscore -= 1
 
     def on_click_card(self, card) -> None:
-        info("Clicked card")
-        debug(f"Clicked: {card.get_card_text()}")
+        info('Clicked card')
+        debug(f'Clicked: {card.get_card_text()}')
         current_score = self.current_score
         card_obj = card.get_card()
-        card_value = card_obj["value"]
-        card_index = card_obj["index"]
-        if card.operator == "+":
+        card_value = card_obj['value']
+        card_index = card_obj['index']
+        if card.operator == '+':
             debug(
-                f"Addition -> round(current_score+card_value, 1) = {
-                    round(current_score+card_value, 1)}"
+                f'Addition -> round(current_score+card_value, 1) = {
+                    round(current_score+card_value, 1)}'
             )
             self.set_current_score(round(current_score + card_value, 1))
-        elif card.operator == "-":
+        elif card.operator == '-':
             debug(
-                f"Subtraction -> round(current_score+card_value, 1) = {
-                    round(current_score-card_value, 1)}"
+                f'Subtraction -> round(current_score+card_value, 1) = {
+                    round(current_score-card_value, 1)}'
             )
             self.set_current_score(round(current_score - card_value, 1))
-        elif card.operator == "*":
+        elif card.operator == '*':
             debug(
-                f"Multiplication -> round(current_score*card_value, 1) = {
-                    round(current_score*card_value, 1)}"
+                f'Multiplication -> round(current_score*card_value, 1) = {
+                    round(current_score*card_value, 1)}'
             )
             self.set_current_score(round(current_score * card_value, 1))
-        elif card.operator == "/":
+        elif card.operator == '/':
             debug(
-                f"Division -> round(current_score/card_value, 1) = {
-                    round(current_score/card_value, 1)}"
+                f'Division -> round(current_score/card_value, 1) = {
+                    round(current_score/card_value, 1)}'
             )
             self.set_current_score(round(current_score / card_value, 1))
-        elif card.operator == "round_up":
-            debug(
-                f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
+        elif card.operator == 'round_up':
+            debug(f'Round up -> math.ceil(current_score) = {math.ceil(current_score)}')
             self.set_current_score(math.ceil(current_score))
-        elif card.operator == "round_down":
+        elif card.operator == 'round_down':
             debug(
-                f"Round down -> math.floor(current_score) = {
-                    math.floor(current_score)}"
+                f'Round down -> math.floor(current_score) = {
+                    math.floor(current_score)}'
             )
             self.set_current_score(math.floor(current_score))
 
         if card_index == 0:
             self.reinit_card(self.card1)
-            debug(f"Card 1 is now: {self.card1.get_card().get_card_text()}")
+            debug(f'Card 1 is now: {self.card1.get_card().get_card_text()}')
         elif card_index == 1:
             self.reinit_card(self.card2)
-            debug(f"Card 2 is now: {self.card2.get_card().get_card_text()}")
+            debug(f'Card 2 is now: {self.card2.get_card().get_card_text()}')
         elif card_index == 2:
             self.reinit_card(self.card3)
-            debug(f"Card 3 is now: {self.card3.get_card().get_card_text()}")
+            debug(f'Card 3 is now: {self.card3.get_card().get_card_text()}')
         elif card_index == 3:
             self.reinit_card(self.card4)
-            debug(f"Card 4 is now: {self.card4.get_card().get_card_text()}")
+            debug(f'Card 4 is now: {self.card4.get_card().get_card_text()}')
 
         self.update_current_highscore()
         self.current_score_label.change_label(text=self.current_score)
         self.current_highscore_label.change_label(
-            text=f"Score: {self.current_highscore}"
+            text=f'Score: {self.current_highscore}'
         )
-        debug(f"Current score is now: {self.current_score}")
+        debug(f'Current score is now: {self.current_score}')
 
         if self.game_over():
-            info("Game ended")
-            self.win_label.change_label("You win!")
+            info('Game ended')
+            self.win_label.change_label('You win!')
             self.disable_cards()
             self.try_again_button.grid(row=0, column=4)
             if self.current_highscore > self.highscore:
-                self.parent.set_highscore("game1", self.current_highscore)
+                self.parent.set_highscore('game1', self.current_highscore)
                 self.highscore_label.change_label(
-                    f"Highscore: {self.current_highscore}"
+                    f'Highscore: {self.current_highscore}'
                 )
 
 
 # TODO:
 # - When growing the location is wrong sometimes:
 #   - must watch the previous worm-part movement direction istead of the first worm-part
-# - Make movement possible from the edges of the map
 #   - Make borders that ends the game when colliding
+
 
 class Game2(tb.Frame):
     def __init__(self, parent) -> None:
@@ -402,7 +416,7 @@ class Game2(tb.Frame):
         Game ends when player collides with itself
         """
         self.parent = parent
-        self.highscore = self.parent.get_highscore("game1")
+        self.highscore = self.parent.get_highscore('game1')
         self.game_speed = 0.6
 
         self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
@@ -410,79 +424,80 @@ class Game2(tb.Frame):
         self.frame = tb.Frame(self.parent, padding=0, width=0)
 
         self.back_button = tb.Button(
-            self.frame_top_left, text="Quit", command=lambda: self.quit_game()
+            self.frame_top_left, text='Quit', command=lambda: self.quit_game()
         )
         self.back_button.grid(row=0, column=0)
 
         self.go_right_button = tb.Button(
             self.frame_top_right,
-            text="Move Right",
-            command=lambda: self.set_movement_direction("RIGHT"),
+            text='Move Right',
+            command=lambda: self.set_movement_direction('RIGHT'),
         )
 
         self.go_left_button = tb.Button(
             self.frame_top_right,
-            text="Move Left",
-            command=lambda: self.set_movement_direction("LEFT"),
+            text='Move Left',
+            command=lambda: self.set_movement_direction('LEFT'),
         )
         self.go_left_button.grid(row=0, column=0)
         self.go_right_button.grid(row=0, column=1)
 
         self.go_up_button = tb.Button(
             self.frame_top_right,
-            text="Move Up",
-            command=lambda: self.set_movement_direction("UP"),
+            text='Move Up',
+            command=lambda: self.set_movement_direction('UP'),
         )
 
         self.go_down_button = tb.Button(
             self.frame_top_right,
-            text="Move Down",
-            command=lambda: self.set_movement_direction("DOWN"),
+            text='Move Down',
+            command=lambda: self.set_movement_direction('DOWN'),
         )
         self.go_up_button.grid(row=1, column=0, pady=5)
         self.go_down_button.grid(row=1, column=1, pady=5)
 
-        self.current_movement_dir = "RIGHT"
-        self.previous_movement_dir = "RIGHT"
+        self.current_movement_dir = 'RIGHT'
+        self.previous_movement_dir = 'RIGHT'
         self.passed_time = 0.0
         self.t = None  # type: ignore
         self.food_position = (0, 8)
 
-        # Init board
-        # TODO:
-        # Make this a function
-        self.board = []
+        self.board = self.init_board()
+
+        self.worm = self.Worm(self, self.frame)
+
+    def init_board(self) -> List:
+        board = []
         for row in range(10):
             for column in range(10):
                 column_label = Label(
                     self.frame,
                     row_and_column=(row, column),
-                    text="_",
-                    customizations={"padding": "1 -4"},
+                    text='_',
+                    customizations={'padding': '1 -4'},
                 )
-                self.board.append(column_label)
-
-        self.worm = self.Worm(self, self.frame)
+                board.append(column_label)
+        return board
 
     def spawn_food(self, test=False) -> None:
         if test:
-            debug("Test spawn enabled, spawning to 5,0")
+            debug('Test spawn enabled, spawning to 5,0')
             for child in self.board:
                 row, col = child.get_row_and_column()
 
                 if row == 5 and col == 0:
-                    child.change_label("*")
+                    child.change_label('*')
                     self.food_position = (5, 0)
                     break
             return
         free_spots = []
         for child in self.board:
             spot_char = child.get_text()
-            if spot_char == "_":
+            if spot_char == '_':
                 row, col = child.get_row_and_column()
                 free_spots.append((row, col))
             else:
-                debug(f"Not a free spot: {child.get_row_and_column()}")
+                debug(f'Not a free spot: {child.get_row_and_column()}')
 
         choose_spot = choice(free_spots)
 
@@ -491,47 +506,45 @@ class Game2(tb.Frame):
 
             if row == choose_spot[0] and col == choose_spot[1]:
                 debug(
-                    "Spawning food: ",
+                    'Spawning food: ',
                 )
-                child.change_label("*")
+                child.change_label('*')
                 self.food_position = (choose_spot[0], choose_spot[1])
                 break
 
-        debug(f"FOOD POS:{self.food_position}")
+        debug(f'FOOD POS:{self.food_position}')
 
     def set_movement_direction(self, direction: str) -> None:
         is_valid_movement = self.check_valid_movement(direction)
         if not is_valid_movement:
-            debug(f"Invalid movement:{
-                  self.current_movement_dir} -> {direction}")
+            debug(f'Invalid movement:{
+                  self.current_movement_dir} -> {direction}')
         if self.current_movement_dir != direction and is_valid_movement:
             self.previous_movement_dir = self.current_movement_dir
             self.current_movement_dir = direction
 
     def check_valid_movement(self, direction: str) -> bool:
-        if direction == "LEFT" and self.current_movement_dir == "RIGHT":
+        if direction == 'LEFT' and self.current_movement_dir == 'RIGHT':
             return False
-        elif direction == "RIGHT" and self.current_movement_dir == "LEFT":
+        elif direction == 'RIGHT' and self.current_movement_dir == 'LEFT':
             return False
-        elif direction == "UP" and self.current_movement_dir == "DOWN":
+        elif direction == 'UP' and self.current_movement_dir == 'DOWN':
             return False
-        elif direction == "DOWN" and self.current_movement_dir == "UP":
+        elif direction == 'DOWN' and self.current_movement_dir == 'UP':
             return False
         else:
             return True
 
     def update_frame(self) -> None:
-        self.t = threading.Timer(
-            self.game_speed, self.update_frame)  # type: ignore
+        self.t = threading.Timer(self.game_speed, self.update_frame)  # type: ignore
         self.t.start()  # type: ignore
         self.passed_time += self.game_speed
-        info(f"Frame updated, passed time: {self.passed_time}s")
-        self.worm.update_position(
-            self.current_movement_dir, self.previous_movement_dir)
+        info(f'Frame updated, passed time: {self.passed_time}s')
+        self.worm.update_position(self.current_movement_dir, self.previous_movement_dir)
 
     def quit_game(self) -> None:
         self.t.cancel()  # type: ignore
-        self.parent.change_window("main")
+        self.parent.change_window('main')
 
     def hide(self) -> None:
         self.frame.grid_remove()
@@ -546,12 +559,12 @@ class Game2(tb.Frame):
         self.spawn_food(test=False)
 
     def play_again(self) -> None:
-        info("Play again button pressed")
+        info('Play again button pressed')
 
     def set_current_highscore(self, value: int) -> None:
         if self.current_highscore > self.highscore:
             self.highscore = self.current_highscore
-            self.parent.set_highscore("game1", self.highscore)
+            self.parent.set_highscore('game1', self.highscore)
 
     def reset_current_highscore(self) -> None:
         self.current_highscore = self.max_highscore
@@ -567,17 +580,14 @@ class Game2(tb.Frame):
 
     def food_eaten(self) -> None:
         for child in self.board:
-            row, col = child.get_row_and_column()
-            if child.get_text() == "*":
-                debug(
-                    "removing food ",
-                )
-                child.change_label("_")
+            if child.get_text() == '*':
+                debug('removing food ')
+                child.change_label('_')
                 break
         self.spawn_food()
 
     class Worm(tb.Frame):
-        def __init__(self, root, parent, length=1, char="O") -> None:
+        def __init__(self, root, parent, length=1, char='O') -> None:
             self.root = root
             self.length = length
             self.char = char
@@ -596,7 +606,7 @@ class Game2(tb.Frame):
             food_pos = self.root.food_position
 
             if food_pos == (self.position[0][0], self.position[0][1]):
-                debug("EAT FOOD")
+                debug('EAT FOOD')
                 self.root.food_eaten()
                 self.add_length()
                 self.grow_worm()
@@ -605,13 +615,13 @@ class Game2(tb.Frame):
             current_dir = self.root.current_movement_dir
             row_diff = 0
             col_diff = 0
-            if current_dir == "RIGHT":
+            if current_dir == 'RIGHT':
                 col_diff -= 1
-            elif current_dir == "LEFT":
+            elif current_dir == 'LEFT':
                 col_diff += 1
-            elif current_dir == "UP":
+            elif current_dir == 'UP':
                 row_diff += 1
-            elif current_dir == "DOWN":
+            elif current_dir == 'DOWN':
                 row_diff -= 1
 
             if self.length == 2:
@@ -644,7 +654,7 @@ class Game2(tb.Frame):
             self.length += 1
 
         def update_position(self, direction: str, previous_direction: str) -> None:
-            debug(f"Moved: {direction}, prev: {previous_direction}")
+            debug(f'Moved: {direction}, prev: {previous_direction}')
             curr_worm = 0
             old_pos_row = 0
             old_pos_col = 0
@@ -653,25 +663,25 @@ class Game2(tb.Frame):
                 temp_col = pos[1]
                 if curr_worm == 0:
                     # Change to be variables (max borders)
-                    if direction == "LEFT":
+                    if direction == 'LEFT':
                         if pos[1] > 0:
                             pos[1] -= 1
                         else:
                             pos[1] = 9
                     # Change to be variables (max borders)
-                    if direction == "RIGHT":
+                    if direction == 'RIGHT':
                         if pos[1] < 9:
                             pos[1] += 1
                         else:
                             pos[1] = 0
                     # Change to be variables (max borders)
-                    if direction == "UP":
+                    if direction == 'UP':
                         if pos[0] > 0:
                             pos[0] -= 1
                         else:
                             pos[0] = 9
                     # Change to be variables (max borders)
-                    if direction == "DOWN":
+                    if direction == 'DOWN':
                         if pos[0] < 9:
                             pos[0] += 1
                         else:
@@ -680,24 +690,19 @@ class Game2(tb.Frame):
                     pos[0] = old_pos_row
                     pos[1] = old_pos_col
 
-                debug(f"Pos {curr_worm}: {pos}")
+                debug(f'Pos {curr_worm}: {pos}')
                 if curr_worm == 0:
                     self.worm1.grid_configure(row=pos[0], column=pos[1])
                 if curr_worm == 1:
-                    self.worm2.grid_configure(
-                        row=old_pos_row, column=old_pos_col)
+                    self.worm2.grid_configure(row=old_pos_row, column=old_pos_col)
                 if curr_worm == 2:
-                    self.worm3.grid_configure(
-                        row=old_pos_row, column=old_pos_col)
+                    self.worm3.grid_configure(row=old_pos_row, column=old_pos_col)
                 if curr_worm == 3:
-                    self.worm4.grid_configure(
-                        row=old_pos_row, column=old_pos_col)
+                    self.worm4.grid_configure(row=old_pos_row, column=old_pos_col)
                 if curr_worm == 4:
-                    self.worm5.grid_configure(
-                        row=old_pos_row, column=old_pos_col)
+                    self.worm5.grid_configure(row=old_pos_row, column=old_pos_col)
                 if curr_worm == 5:
-                    self.worm6.grid_configure(
-                        row=old_pos_row, column=old_pos_col)
+                    self.worm6.grid_configure(row=old_pos_row, column=old_pos_col)
 
                 old_pos_row = temp_row
                 old_pos_col = temp_col
@@ -719,7 +724,7 @@ class Card:
         - max_value: maximum value that this card's value can get, default=50
         """
         self.card_type = card_type
-        if self.card_type == "multiplication" or self.card_type == "division":
+        if self.card_type == 'multiplication' or self.card_type == 'division':
             self.value = randint(min_value, max_value // 2)
         else:
             self.value = randint(min_value, max_value)
@@ -733,30 +738,30 @@ class Card:
     def get_card_text(self):
         if len(self.operator) > 1:
             return self.value
-        return f"{self.operator}{self.value}"
+        return f'{self.operator}{self.value}'
 
     def init_value_and_operator(self):
-        if self.card_type == "addition":
-            self.operator = "+"
-        elif self.card_type == "subtraction":
-            self.operator = "-"
-        elif self.card_type == "multiplication":
+        if self.card_type == 'addition':
+            self.operator = '+'
+        elif self.card_type == 'subtraction':
+            self.operator = '-'
+        elif self.card_type == 'multiplication':
             self.value *= choice([-1, 1])
-            self.operator = "*"
-        elif self.card_type == "division":
+            self.operator = '*'
+        elif self.card_type == 'division':
             self.value *= choice([-1, 1])
-            self.operator = "/"
-        elif self.card_type == "round_up":
-            self.value = "Round\nup"
-            self.operator = "round_up"
-        elif self.card_type == "round_down":
-            self.value = "Round\ndown"
-            self.operator = "round_down"
+            self.operator = '/'
+        elif self.card_type == 'round_up':
+            self.value = 'Round\nup'
+            self.operator = 'round_up'
+        elif self.card_type == 'round_down':
+            self.value = 'Round\ndown'
+            self.operator = 'round_down'
         else:
-            debug("Invalid card_type:", self.card_type)
+            debug('Invalid card_type:', self.card_type)
 
     def get_card(self) -> dict:
-        return {"value": self.value, "index": self.index, "operator": self.operator}
+        return {'value': self.value, 'index': self.index, 'operator': self.operator}
 
     def reinit_card(self, operation=None):
         if operation:
@@ -764,21 +769,21 @@ class Card:
         else:
             self.card_type = choice(
                 [
-                    "addition",
-                    "subtraction",
-                    "multiplication",
-                    "division",
-                    "round_up",
-                    "round_down",
+                    'addition',
+                    'subtraction',
+                    'multiplication',
+                    'division',
+                    'round_up',
+                    'round_down',
                 ]
             )
-        if self.card_type == "multiplication" or self.card_type == "division":
+        if self.card_type == 'multiplication' or self.card_type == 'division':
             self.value = randint(self.min_value, self.max_value // 2)
         else:
             self.value = randint(self.min_value, self.max_value)
         self.init_value_and_operator()
-        info("Card has been updated")
-        debug(f"Card updated {self.get_card()}")
+        info('Card has been updated')
+        debug(f'Card updated {self.get_card()}')
 
 
 class CardButton(tb.Frame):
@@ -799,33 +804,32 @@ class CardButton(tb.Frame):
         self.parent = parent
 
         default_customizations = {
-            "width": 8,
-            "height": 5,
-            "padx": 8,
-            "pady": 10,
-            "style": "TButton",
-            "on_click": self.on_click,
+            'width': 8,
+            'height': 5,
+            'padx': 8,
+            'pady': 10,
+            'style': 'TButton',
+            'on_click': self.on_click,
         }
         if customizations is not None:
             for key, value in customizations.items():
                 default_customizations[key] = value
 
-        self.binded_command: Callable[[
-            Card], None] = default_customizations["on_click"]  # type: ignore
+        self.binded_command: Callable[[Card], None] = default_customizations['on_click']  # type: ignore
         row, col = row_and_column
-        width = default_customizations["width"]
-        self.height = default_customizations["height"]
-        padx = default_customizations["padx"]
-        pady = default_customizations["pady"]
-        style = default_customizations["style"]
+        width = default_customizations['width']
+        self.height = default_customizations['height']
+        padx = default_customizations['padx']
+        pady = default_customizations['pady']
+        style = default_customizations['style']
 
         self.card = card
         text = self.card.get_card_text()
-        break_count = text.count("\n")
+        break_count = text.count('\n')
 
         for i in range((self.height - break_count) // 2):
-            text += "\n"
-            text = "\n" + text
+            text += '\n'
+            text = '\n' + text
 
         self.button = tb.Button(
             self.parent,
@@ -850,19 +854,19 @@ class CardButton(tb.Frame):
 
     def update_text(self, style: str) -> None:
         text = self.card.get_card_text()
-        break_count = text.count("\n")
+        break_count = text.count('\n')
 
-        debug(f"breakcount: {break_count}")
+        debug(f'breakcount: {break_count}')
 
         for i in range((self.height - break_count) // 2):
-            text += "\n"
-            text = "\n" + text
+            text += '\n'
+            text = '\n' + text
 
         if break_count > 0:
             text = text[:-1]
 
         self.button.configure(text=text, bootstyle=style)
-        debug(f"Card style is now: {style}")
+        debug(f'Card style is now: {style}')
 
 
 class Label(tb.Frame):
@@ -879,22 +883,22 @@ class Label(tb.Frame):
         super().__init__(parent)
 
         default_customizations = {
-            "sticky": None,
-            "columnspan": 1,
-            "justify": "left",
-            "font": ("Arial", 20),
-            "padding": 0,
+            'sticky': None,
+            'columnspan': 1,
+            'justify': 'left',
+            'font': ('Arial', 20),
+            'padding': 0,
         }
 
         if customizations is not None:
             for key, value in customizations.items():
                 default_customizations[key] = value
 
-        sticky = default_customizations["sticky"]
-        colspan = default_customizations["columnspan"]
-        justify = default_customizations["justify"]
-        font = default_customizations["font"]
-        padding = default_customizations["padding"]
+        sticky = default_customizations['sticky']
+        colspan = default_customizations['columnspan']
+        justify = default_customizations['justify']
+        font = default_customizations['font']
+        padding = default_customizations['padding']
 
         self.row, self.col = row_and_column
 
@@ -907,7 +911,7 @@ class Label(tb.Frame):
         )
 
     def get_text(self) -> str:
-        return self.label.cget("text")
+        return self.label.cget('text')
 
     def get_row_and_column(self) -> tuple:
         return (self.row, self.col)
@@ -917,8 +921,8 @@ class Label(tb.Frame):
 
 
 App(
-    title="Awesome Card Game v0.3",
-    theme="superhero",
+    title='Awesome Card Game v0.3',
+    theme='superhero',
     size=(600, 650),
     logging_level=logging.DEBUG,
 )
