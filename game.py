@@ -187,7 +187,8 @@ class Game1(tb.Frame):
         )
 
         self.win_label = Label(self.frame, (0, 0), "")
-        self.goal_label = Label(self.frame, (1, 1), f"Goal: {self.target_score}")
+        self.goal_label = Label(
+            self.frame, (1, 1), f"Goal: {self.target_score}")
         self.try_again_button = tb.Button(
             self.frame, text="Play again", command=self.play_again
         )
@@ -196,7 +197,8 @@ class Game1(tb.Frame):
         )
         self.card1 = self.init_card(self.frame_cards, 3, 0, "addition", 0)
         self.card2 = self.init_card(self.frame_cards, 3, 1, "subtraction", 1)
-        self.card3 = self.init_card(self.frame_cards, 3, 2, "multiplication", 2)
+        self.card3 = self.init_card(
+            self.frame_cards, 3, 2, "multiplication", 2)
         self.card4 = self.init_card(self.frame_cards, 3, 3, "division", 3)
 
     def get_card_style(self, card_type: str) -> str:
@@ -239,7 +241,6 @@ class Game1(tb.Frame):
         self.enable_cards()
         self.current_highscore_label.change_label(self.current_highscore)
         self.current_score_label.change_label(self.current_score)
-
 
     def hide(self) -> None:
         self.frame.grid_remove()
@@ -320,30 +321,36 @@ class Game1(tb.Frame):
         card_index = card_obj["index"]
         if card.operator == "+":
             debug(
-                f"Addition -> round(current_score+card_value, 1) = {round(current_score+card_value, 1)}"
+                f"Addition -> round(current_score+card_value, 1) = {
+                    round(current_score+card_value, 1)}"
             )
             self.set_current_score(round(current_score + card_value, 1))
         elif card.operator == "-":
             debug(
-                f"Subtraction -> round(current_score+card_value, 1) = {round(current_score-card_value, 1)}"
+                f"Subtraction -> round(current_score+card_value, 1) = {
+                    round(current_score-card_value, 1)}"
             )
             self.set_current_score(round(current_score - card_value, 1))
         elif card.operator == "*":
             debug(
-                f"Multiplication -> round(current_score*card_value, 1) = {round(current_score*card_value, 1)}"
+                f"Multiplication -> round(current_score*card_value, 1) = {
+                    round(current_score*card_value, 1)}"
             )
             self.set_current_score(round(current_score * card_value, 1))
         elif card.operator == "/":
             debug(
-                f"Division -> round(current_score/card_value, 1) = {round(current_score/card_value, 1)}"
+                f"Division -> round(current_score/card_value, 1) = {
+                    round(current_score/card_value, 1)}"
             )
             self.set_current_score(round(current_score / card_value, 1))
         elif card.operator == "round_up":
-            debug(f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
+            debug(
+                f"Round up -> math.ceil(current_score) = {math.ceil(current_score)}")
             self.set_current_score(math.ceil(current_score))
         elif card.operator == "round_down":
             debug(
-                f"Round down -> math.floor(current_score) = {math.floor(current_score)}"
+                f"Round down -> math.floor(current_score) = {
+                    math.floor(current_score)}"
             )
             self.set_current_score(math.floor(current_score))
 
@@ -382,7 +389,8 @@ class Game1(tb.Frame):
 # TODO:
 # - When growing the location is wrong sometimes:
 #   - must watch the previous worm-part movement direction istead of the first worm-part
-
+# - Make movement possible from the edges of the map
+#   - Make borders that ends the game when colliding
 
 class Game2(tb.Frame):
     def __init__(self, parent) -> None:
@@ -395,6 +403,7 @@ class Game2(tb.Frame):
         """
         self.parent = parent
         self.highscore = self.parent.get_highscore("game1")
+        self.game_speed = 0.6
 
         self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
         self.frame_top_right = tb.Frame(self.parent, padding=10, width=10)
@@ -434,11 +443,14 @@ class Game2(tb.Frame):
         self.go_down_button.grid(row=1, column=1, pady=5)
 
         self.current_movement_dir = "RIGHT"
+        self.previous_movement_dir = "RIGHT"
         self.passed_time = 0.0
         self.t = None  # type: ignore
         self.food_position = (0, 8)
 
-        # Init board -> make function
+        # Init board
+        # TODO:
+        # Make this a function
         self.board = []
         for row in range(10):
             for column in range(10):
@@ -488,14 +500,34 @@ class Game2(tb.Frame):
         debug(f"FOOD POS:{self.food_position}")
 
     def set_movement_direction(self, direction: str) -> None:
-        self.current_movement_dir = direction
+        is_valid_movement = self.check_valid_movement(direction)
+        if not is_valid_movement:
+            debug(f"Invalid movement:{
+                  self.current_movement_dir} -> {direction}")
+        if self.current_movement_dir != direction and is_valid_movement:
+            self.previous_movement_dir = self.current_movement_dir
+            self.current_movement_dir = direction
+
+    def check_valid_movement(self, direction: str) -> bool:
+        if direction == "LEFT" and self.current_movement_dir == "RIGHT":
+            return False
+        elif direction == "RIGHT" and self.current_movement_dir == "LEFT":
+            return False
+        elif direction == "UP" and self.current_movement_dir == "DOWN":
+            return False
+        elif direction == "DOWN" and self.current_movement_dir == "UP":
+            return False
+        else:
+            return True
 
     def update_frame(self) -> None:
-        self.t = threading.Timer(0.8, self.update_frame)  # type: ignore
+        self.t = threading.Timer(
+            self.game_speed, self.update_frame)  # type: ignore
         self.t.start()  # type: ignore
-        self.passed_time += 0.8
+        self.passed_time += self.game_speed
         info(f"Frame updated, passed time: {self.passed_time}s")
-        self.worm.update_position(self.current_movement_dir)
+        self.worm.update_position(
+            self.current_movement_dir, self.previous_movement_dir)
 
     def quit_game(self) -> None:
         self.t.cancel()  # type: ignore
@@ -516,7 +548,7 @@ class Game2(tb.Frame):
     def play_again(self) -> None:
         info("Play again button pressed")
 
-    def set_current_highscore(self, value: int):
+    def set_current_highscore(self, value: int) -> None:
         if self.current_highscore > self.highscore:
             self.highscore = self.current_highscore
             self.parent.set_highscore("game1", self.highscore)
@@ -529,7 +561,7 @@ class Game2(tb.Frame):
             self.current_highscore -= 1
 
     # TODO:
-    # Implement this
+    # Implement game end
     def game_over(self) -> None:
         pass
 
@@ -611,8 +643,8 @@ class Game2(tb.Frame):
         def add_length(self) -> None:
             self.length += 1
 
-        def update_position(self, direction: str) -> None:
-            debug(f"Moved: {direction}")
+        def update_position(self, direction: str, previous_direction: str) -> None:
+            debug(f"Moved: {direction}, prev: {previous_direction}")
             curr_worm = 0
             old_pos_row = 0
             old_pos_col = 0
@@ -620,14 +652,30 @@ class Game2(tb.Frame):
                 temp_row = pos[0]
                 temp_col = pos[1]
                 if curr_worm == 0:
-                    if direction == "LEFT" and pos[1] > 0:
-                        pos[1] -= 1
-                    if direction == "RIGHT" and pos[1] < 9:
-                        pos[1] += 1
-                    if direction == "UP" and pos[0] > 0:
-                        pos[0] -= 1
-                    if direction == "DOWN" and pos[0] < 9:
-                        pos[0] += 1
+                    # Change to be variables (max borders)
+                    if direction == "LEFT":
+                        if pos[1] > 0:
+                            pos[1] -= 1
+                        else:
+                            pos[1] = 9
+                    # Change to be variables (max borders)
+                    if direction == "RIGHT":
+                        if pos[1] < 9:
+                            pos[1] += 1
+                        else:
+                            pos[1] = 0
+                    # Change to be variables (max borders)
+                    if direction == "UP":
+                        if pos[0] > 0:
+                            pos[0] -= 1
+                        else:
+                            pos[0] = 9
+                    # Change to be variables (max borders)
+                    if direction == "DOWN":
+                        if pos[0] < 9:
+                            pos[0] += 1
+                        else:
+                            pos[0] = 0
                 else:
                     pos[0] = old_pos_row
                     pos[1] = old_pos_col
@@ -636,15 +684,20 @@ class Game2(tb.Frame):
                 if curr_worm == 0:
                     self.worm1.grid_configure(row=pos[0], column=pos[1])
                 if curr_worm == 1:
-                    self.worm2.grid_configure(row=old_pos_row, column=old_pos_col)
+                    self.worm2.grid_configure(
+                        row=old_pos_row, column=old_pos_col)
                 if curr_worm == 2:
-                    self.worm3.grid_configure(row=old_pos_row, column=old_pos_col)
+                    self.worm3.grid_configure(
+                        row=old_pos_row, column=old_pos_col)
                 if curr_worm == 3:
-                    self.worm4.grid_configure(row=old_pos_row, column=old_pos_col)
+                    self.worm4.grid_configure(
+                        row=old_pos_row, column=old_pos_col)
                 if curr_worm == 4:
-                    self.worm5.grid_configure(row=old_pos_row, column=old_pos_col)
+                    self.worm5.grid_configure(
+                        row=old_pos_row, column=old_pos_col)
                 if curr_worm == 5:
-                    self.worm6.grid_configure(row=old_pos_row, column=old_pos_col)
+                    self.worm6.grid_configure(
+                        row=old_pos_row, column=old_pos_col)
 
                 old_pos_row = temp_row
                 old_pos_col = temp_col
@@ -757,7 +810,8 @@ class CardButton(tb.Frame):
             for key, value in customizations.items():
                 default_customizations[key] = value
 
-        self.binded_command: Callable[[Card], None] = default_customizations["on_click"]  # type: ignore
+        self.binded_command: Callable[[
+            Card], None] = default_customizations["on_click"]  # type: ignore
         row, col = row_and_column
         width = default_customizations["width"]
         self.height = default_customizations["height"]
