@@ -221,10 +221,25 @@ class Game1(tb.Frame):
     def game_over(self) -> bool:
         return self.target_score == self.current_score
 
-    # TODO:
-    # - Reset game states / scores. Or pause game?
     def quit_game(self) -> None:
+        self.reset_game()
         self.parent.change_window("main")
+
+    def reset_game(self) -> None:
+        info("Reset game")
+        self.current_highscore = self.max_highscore
+        self.current_score = self.starting_score
+        self.reinit_card(self.card1, "addition")
+        self.reinit_card(self.card2, "subtraction")
+        self.reinit_card(self.card3, "multiplication")
+        self.reinit_card(self.card4, "division")
+
+        self.try_again_button.grid_remove()
+        self.win_label.change_label("")
+        self.enable_cards()
+        self.current_highscore_label.change_label(self.current_highscore)
+        self.current_score_label.change_label(self.current_score)
+
 
     def hide(self) -> None:
         self.frame.grid_remove()
