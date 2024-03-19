@@ -24,18 +24,43 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - New game (Worm game) with movement using buttons and keybindings
 
 ### v0.3
+
 - Added main window where you can choose a game to play
 - Added worm game
     - does not have ending yet
     - does not have scoring or moving with keys
 
 #### Todo for v0.4
-- Finish worm game by adding the following:
-    - Game end mechanic (Moves to wall or through itself)
-    - highscore and storing this highscore
-    - ~~maybe sounds~~ later versions
-    - ~~styling could be better~~ later versions
-    - Rework worm grow to be dynamic (maybe class implementation)
-    - fix small bugs found in the game.py TODO sections
 
+- Game end mechanic (Moves to wall or through itself)
+- highscore and storing this highscore
+- ~~maybe sounds~~ later versions
+- ~~styling could be better~~ later versions
+- Rework worm grow to be dynamic (maybe class implementation)
+- fix small bugs found in the game.py TODO sections
+
+### v0.4
+
+- Changed default formatter to ruff
+
+#### Game1
+
+- Now resets the game when quitting
+
+#### Game 2
+
+- Added game ending mechanic to  (by colliding itself)
+- Added moving through end borders
+- Added invalid movement check ex. right->left, up->down
+
+#### TODO for v0.5:
+
+- Plan for general stylings 
+
+##### Game 2
+
+- Movement using WASD or arrow keys
+- 'Try again' button and End game events
+- Speed increases over time or when eating 
+- Visual clarity when growing the worm
 
