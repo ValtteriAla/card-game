@@ -53,8 +53,8 @@ class App(tb.Window):
         self.mainloop()
 
     def get_highscore_path(self) -> str:
-        path_arr = os.path.abspath(__file__).split("\\")[:-1]
-        folder_path = "/".join(path_arr)
+        path_arr = os.path.abspath(__file__).split('\\')[:-1]
+        folder_path = '/'.join(path_arr)
         file_path = folder_path + '/highscores.json'
         print(file_path)
         return file_path
@@ -305,8 +305,6 @@ class Game1(tb.Frame):
         self.card3.enable()
         self.card4.enable()
 
-    # Used when clicking card and 'play again'
-
     def set_current_score(self, value: int) -> None:
         starting_score = self.starting_score
         if value > starting_score:
@@ -400,12 +398,6 @@ class Game1(tb.Frame):
                 )
 
 
-# TODO:
-# - When growing the location is wrong sometimes:
-#   - must watch the previous worm-part movement direction istead of the first worm-part
-#   - Make borders that ends the game when colliding
-
-
 class Game2(tb.Frame):
     def __init__(self, parent) -> None:
         """
@@ -417,7 +409,12 @@ class Game2(tb.Frame):
         """
         self.parent = parent
         self.highscore = self.parent.get_highscore('game1')
-        self.game_speed = 0.6
+        self.game_speed = 0.1
+
+        self.board_height = 10
+        self.board_width = 10
+
+        self.keyinputs = KeyInputs(self.parent, self.on_wasd, wasd=True)
 
         self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
         self.frame_top_right = tb.Frame(self.parent, padding=10, width=10)
@@ -461,16 +458,16 @@ class Game2(tb.Frame):
         self.passed_time = 0.0
         self.t = None  # type: ignore
         self.food_position = (0, 8)
+        self.worm_moved_since_previous_update = False
 
         self.board = self.init_board()
 
         self.worm = self.Worm(self, self.frame)
-        
 
     def init_board(self) -> List:
         board = []
-        for row in range(10):
-            for column in range(10):
+        for row in range(self.board_width):
+            for column in range(self.board_height):
                 column_label = Label(
                     self.frame,
                     row_and_column=(row, column),
@@ -479,6 +476,18 @@ class Game2(tb.Frame):
                 )
                 board.append(column_label)
         return board
+
+    def on_wasd(self, key):
+        debug(f"Pressed key: '{key}'")
+
+        if key == 'w':
+            self.set_movement_direction('UP')
+        elif key == 'a':
+            self.set_movement_direction('LEFT')
+        elif key == 's':
+            self.set_movement_direction('DOWN')
+        elif key == 'd':
+            self.set_movement_direction('RIGHT')
 
     def spawn_food(self, test=False) -> None:
         if test:
@@ -492,13 +501,15 @@ class Game2(tb.Frame):
                     break
             return
         free_spots = []
+
+        occupied_spots = []
+        for worm in self.worm.get_worm():
+            occupied_spots.append(worm.get_position())
+
         for child in self.board:
-            spot_char = child.get_text()
-            if spot_char == '_':
-                row, col = child.get_row_and_column()
+            row, col = child.get_row_and_column()
+            if [row, col] not in occupied_spots:
                 free_spots.append((row, col))
-            else:
-                debug(f'Not a free spot: {child.get_row_and_column()}')
 
         choose_spot = choice(free_spots)
 
@@ -517,12 +528,14 @@ class Game2(tb.Frame):
 
     def set_movement_direction(self, direction: str) -> None:
         is_valid_movement = self.check_valid_movement(direction)
-        if not is_valid_movement:
+        if not is_valid_movement or not self.worm_moved_since_previous_update:
             debug(f'Invalid movement:{
                   self.current_movement_dir} -> {direction}')
-        if self.current_movement_dir != direction and is_valid_movement:
+        if self.current_movement_dir != direction and is_valid_movement and self.worm_moved_since_previous_update:
+            debug("MOVEMENT REGISTERED")
             self.previous_movement_dir = self.current_movement_dir
             self.current_movement_dir = direction
+            self.worm_moved_since_previous_update = False
 
     def check_valid_movement(self, direction: str) -> bool:
         if direction == 'LEFT' and self.current_movement_dir == 'RIGHT':
@@ -581,7 +594,7 @@ class Game2(tb.Frame):
         first_worm_pos = first_worm.get_position()
         for worm in worms[1:]:
             if worm.get_position() == first_worm_pos:
-                print("Game Over")
+                print('Game Over')
                 self.t.cancel()
 
     def food_eaten(self) -> None:
@@ -595,30 +608,35 @@ class Game2(tb.Frame):
     class Worm(tb.Frame):
         def __init__(self, root, parent, char='O') -> None:
             self.root = root
-            #self.length = length
             self.char = char
             self.position = [0, 1]
             self.parent = parent
             self.worm = []
-            self.worm.append(self.WormChild(self.parent, [0, 1], char=char, current_movement_dir=root.current_movement_dir))
+            self.worm.append(
+                self.WormChild(
+                    self.parent,
+                    [0, 1],
+                    char=char,
+                    current_movement_dir=root.current_movement_dir,
+                )
+            )
 
         def get_worm(self) -> list:
             return self.worm
-        
+
         def eat_food(self) -> None:
             food_pos = self.root.food_position
             first_worm = self.worm[0]
             first_worm_pos = first_worm.get_position()
             if food_pos == first_worm_pos:
                 debug('EAT FOOD')
-                self.root.food_eaten()
-                #self.add_length()
                 self.grow_worm()
+                self.root.food_eaten()
 
         def grow_worm(self) -> None:
             last_worm = self.worm[-1]
             current_dir = last_worm.get_movement_direction()
-            
+
             row_diff = 0
             col_diff = 0
             if current_dir == 'RIGHT':
@@ -629,8 +647,7 @@ class Game2(tb.Frame):
                 row_diff += 1
             elif current_dir == 'DOWN':
                 row_diff -= 1
-            
-            
+
             last_worm_pos = last_worm.get_position()
             row = row_diff + last_worm_pos[0]
             col = col_diff + last_worm_pos[1]
@@ -644,7 +661,7 @@ class Game2(tb.Frame):
             prev_pos = [0, 1]
             for worm in self.worm:
                 curr_pos = worm.get_position().copy()
-                debug(f"CURR_POS: {curr_pos}")
+                debug(f'CURR_POS: {curr_pos}')
 
                 if first_worm:
                     prev_pos = worm.get_position()
@@ -652,47 +669,50 @@ class Game2(tb.Frame):
                         if curr_pos[1] > 0:
                             curr_pos[1] -= 1
                         else:
-                            curr_pos[1] = 9
-                    # Change to be variables (max borders)
+                            curr_pos[1] = self.root.board_width - 1
                     if direction == 'RIGHT':
-                        if curr_pos[1] < 9:
+                        if curr_pos[1] < self.root.board_width - 1:
                             curr_pos[1] += 1
                         else:
                             curr_pos[1] = 0
-                    # Change to be variables (max borders)
                     if direction == 'UP':
                         if curr_pos[0] > 0:
                             curr_pos[0] -= 1
                         else:
-                            curr_pos[0] = 9
-                    # Change to be variables (max borders)
+                            curr_pos[0] = self.root.board_height - 1
                     if direction == 'DOWN':
-                        if curr_pos[0] < 9:
+                        if curr_pos[0] < self.root.board_height - 1:
                             curr_pos[0] += 1
                         else:
                             curr_pos[0] = 0
                 else:
                     curr_pos = prev_pos
                     prev_pos = worm.get_position()
-                
 
                 worm.change_position(curr_pos)
+                self.root.worm_moved_since_previous_update = True
 
                 first_worm = False
-                
+
                 debug(f'Pos {worm}: {curr_pos}')
 
             self.eat_food()
 
-        class WormChild():
-            def __init__(self, parent, position: list, char: str, current_movement_dir: str | None = None) -> None:
+        class WormChild:
+            def __init__(
+                self,
+                parent,
+                position: list,
+                char: str,
+                current_movement_dir: str,
+            ) -> None:
                 self.char = char
                 self.position = position
                 self.parent = parent
                 self.worm_label = tb.Label(self.parent, text=self.char)
                 self.worm_label.grid(row=position[0], column=position[1])
                 self.movement_direction = current_movement_dir
-            
+
             def change_position(self, position: list) -> None:
                 self.set_movement_direction(position)
                 self.position = position
@@ -700,27 +720,24 @@ class Game2(tb.Frame):
 
             def get_position(self) -> list:
                 return self.position
-            
+
             def get_movement_direction(self) -> str:
                 return self.movement_direction
 
             def set_movement_direction(self, position: list) -> None:
-                print("Positions: ", position, self.position)
+                print('Positions: ', position, self.position)
                 if position[0] != self.position[0]:
                     if (position[0] - self.position[0]) > 0:
-                        self.movement_direction = "DOWN"
+                        self.movement_direction = 'DOWN'
                     else:
-                        self.movement_direction = "UP"
+                        self.movement_direction = 'UP'
                 else:
                     if (position[1] - self.position[1]) > 0:
-                        self.movement_direction = "RIGHT"
+                        self.movement_direction = 'RIGHT'
                     else:
-                        self.movement_direction = "LEFT"
+                        self.movement_direction = 'LEFT'
 
-                print("UPDATED WORM DIRECTION: ", self.movement_direction)
-
-
-
+                print('UPDATED WORM DIRECTION: ', self.movement_direction)
 
 
 class Card:
@@ -929,6 +946,24 @@ class Label(tb.Frame):
 
     def change_label(self, text: str) -> None:
         self.label.configure(text=text)
+
+
+class KeyInputs:
+    def __init__(self, window, callback=lambda x: 0, wasd=True):
+        '''
+        Registers keyinputs and sends a callback which has the pressed key char in lowercase
+        - callback: currently only sends the character that is being pressed
+            - TODO: make event like return type
+        - on_wasd=True: Checks if any of 'w,a,s,d' keys are being pressed and sends a callback
+        '''
+        self.window = window
+        self.callback = callback
+        if wasd:
+            window.bind('<Key>', self.on_wasd)
+
+    def on_wasd(self, event) -> None:
+        if event.char in ['W', 'A', 'S', 'D', 'w', 'a', 's', 'd']:
+            self.callback(event.char.lower())
 
 
 App(
