@@ -408,8 +408,9 @@ class Game2(tb.Frame):
         Game ends when player collides with itself
         """
         self.parent = parent
-        self.highscore = self.parent.get_highscore('game1')
+        self.highscore = self.parent.get_highscore('game2')
         self.game_speed = 0.1
+        self.current_highscore = 0
 
         self.board_height = 10
         self.board_width = 10
@@ -425,6 +426,17 @@ class Game2(tb.Frame):
         )
         self.back_button.grid(row=0, column=0)
 
+        self.instructions_label = Label(self.frame_top_left, (0, 2), 'Movement: WASD', {'visible': False, 'padding': 20})
+
+        self.highscore_header_label = Label(self.frame_top_right, (0, 0), 'Highscore: ', {'visible': False, 'padding': '0 20'})
+        self.highscore_label = Label(self.frame_top_right, (0, 1), self.highscore, {'visible': False})
+
+        self.current_score_header_label = Label(self.frame_top_right, (1, 0), 'Score: ', {'visible': False, 'padding': '0 20'})
+        self.current_score_label = Label(self.frame_top_right, (1, 1), self.current_highscore, {'visible': False})
+
+
+
+        """ Movement using buttons
         self.go_right_button = tb.Button(
             self.frame_top_right,
             text='Move Right',
@@ -452,6 +464,7 @@ class Game2(tb.Frame):
         )
         self.go_up_button.grid(row=1, column=0, pady=5)
         self.go_down_button.grid(row=1, column=1, pady=5)
+        """
 
         self.current_movement_dir = 'RIGHT'
         self.previous_movement_dir = 'RIGHT'
@@ -476,6 +489,10 @@ class Game2(tb.Frame):
                 )
                 board.append(column_label)
         return board
+
+    def reset_board(self) -> None:
+        for label in self.board:
+            label.change_label('_')
 
     def on_wasd(self, key):
         debug(f"Pressed key: '{key}'")
@@ -531,8 +548,12 @@ class Game2(tb.Frame):
         if not is_valid_movement or not self.worm_moved_since_previous_update:
             debug(f'Invalid movement:{
                   self.current_movement_dir} -> {direction}')
-        if self.current_movement_dir != direction and is_valid_movement and self.worm_moved_since_previous_update:
-            debug("MOVEMENT REGISTERED")
+        if (
+            self.current_movement_dir != direction
+            and is_valid_movement
+            and self.worm_moved_since_previous_update
+        ):
+            debug('MOVEMENT REGISTERED')
             self.previous_movement_dir = self.current_movement_dir
             self.current_movement_dir = direction
             self.worm_moved_since_previous_update = False
@@ -559,34 +580,50 @@ class Game2(tb.Frame):
 
     def quit_game(self) -> None:
         self.t.cancel()  # type: ignore
+        self.reset_board()
+        self.worm.reset_worm()
+        self.current_highscore_score = 0
         self.parent.change_window('main')
 
     def hide(self) -> None:
         self.frame.grid_remove()
         self.frame_top_left.grid_remove()
         self.frame_top_right.grid_remove()
+        self.instructions_label.hidden()
+        self.current_score_header_label.hidden()
+        self.reset_current_highscore()
+        self.current_score_label.hidden()
+        self.highscore_header_label.hidden()
+        self.highscore_label.hidden()
+        
 
     def show(self) -> None:
         self.frame_top_left.grid(column=0, row=0, sticky=NW)
         self.frame_top_right.grid(column=1, row=0, sticky=NE)
         self.frame.grid(column=0, row=1, sticky=N)
+        self.instructions_label.visible()
+        self.current_score_header_label.visible()
+        self.current_score_label.visible()
+        self.highscore_header_label.visible()
+        self.highscore_label.visible()
         self.update_frame()
         self.spawn_food(test=False)
 
     def play_again(self) -> None:
         info('Play again button pressed')
 
-    def set_current_highscore(self, value: int) -> None:
+    def set_current_highscore(self) -> None:
         if self.current_highscore > self.highscore:
             self.highscore = self.current_highscore
-            self.parent.set_highscore('game1', self.highscore)
+            self.parent.set_highscore('game2', self.highscore)
 
     def reset_current_highscore(self) -> None:
-        self.current_highscore = self.max_highscore
+        self.current_highscore = 0
+        self.current_score_label.change_label(self.current_highscore)
 
     def update_current_highscore(self) -> None:
-        if self.current_highscore > 0:
-            self.current_highscore -= 1
+        self.current_highscore += 1
+        self.current_score_label.change_label(self.current_highscore)
 
     def game_over(self) -> None:
         worms = self.worm.get_worm()
@@ -594,10 +631,16 @@ class Game2(tb.Frame):
         first_worm_pos = first_worm.get_position()
         for worm in worms[1:]:
             if worm.get_position() == first_worm_pos:
-                print('Game Over')
+                if self.current_highscore > self.highscore: 
+                    self.set_current_highscore()
+                    self.highscore = self.current_highscore
+                    self.highscore_label.change_label(self.highscore)
+
+                info('Game Over')
                 self.t.cancel()
 
     def food_eaten(self) -> None:
+        self.update_current_highscore()
         for child in self.board:
             if child.get_text() == '*':
                 debug('removing food ')
@@ -612,17 +655,28 @@ class Game2(tb.Frame):
             self.position = [0, 1]
             self.parent = parent
             self.worm = []
+            self.init_worm()
+
+        def get_worm(self) -> list:
+            return self.worm
+
+        def reset_worm(self) -> None:
+            for worm in self.worm:
+                worm.remove()
+                del worm
+            self.init_worm()
+
+        def init_worm(self) -> None:
+            self.worm.clear()
+            self.position = [0, 1]
             self.worm.append(
                 self.WormChild(
                     self.parent,
                     [0, 1],
-                    char=char,
-                    current_movement_dir=root.current_movement_dir,
+                    char=self.char,
+                    current_movement_dir=self.root.current_movement_dir,
                 )
             )
-
-        def get_worm(self) -> list:
-            return self.worm
 
         def eat_food(self) -> None:
             food_pos = self.root.food_position
@@ -712,6 +766,9 @@ class Game2(tb.Frame):
                 self.worm_label = tb.Label(self.parent, text=self.char)
                 self.worm_label.grid(row=position[0], column=position[1])
                 self.movement_direction = current_movement_dir
+
+            def remove(self):
+                self.worm_label.grid_remove()
 
             def change_position(self, position: list) -> None:
                 self.set_movement_direction(position)
@@ -906,7 +963,7 @@ class Label(tb.Frame):
         ### Parameters:
         - row_and_column: tuple with row and column values - (0, 0)
         - text: What is shown in the label
-        - customizations: {'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20), 'padding': 0}
+        - customizations: {'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20), 'padding': 0, 'visible': True}
         """
         super().__init__(parent)
 
@@ -916,17 +973,19 @@ class Label(tb.Frame):
             'justify': 'left',
             'font': ('Arial', 20),
             'padding': 0,
+            'visible': True,
         }
 
         if customizations is not None:
             for key, value in customizations.items():
                 default_customizations[key] = value
 
-        sticky = default_customizations['sticky']
-        colspan = default_customizations['columnspan']
+        self.sticky = default_customizations['sticky']
+        self.colspan = default_customizations['columnspan']
         justify = default_customizations['justify']
         font = default_customizations['font']
         padding = default_customizations['padding']
+        visible = default_customizations['visible']
 
         self.row, self.col = row_and_column
 
@@ -934,9 +993,13 @@ class Label(tb.Frame):
             parent, text=text, justify=justify, font=font, padding=padding
         )
 
-        self.label.grid(
-            row=self.row, column=self.col, columnspan=colspan, sticky=sticky
-        )
+        if visible:
+            self.label.grid(
+                row=self.row,
+                column=self.col,
+                columnspan=self.colspan,
+                sticky=self.sticky,
+            )
 
     def get_text(self) -> str:
         return self.label.cget('text')
@@ -947,15 +1010,23 @@ class Label(tb.Frame):
     def change_label(self, text: str) -> None:
         self.label.configure(text=text)
 
+    def visible(self) -> None:
+        self.label.grid(
+            row=self.row, column=self.col, columnspan=self.colspan, sticky=self.sticky
+        )
+
+    def hidden(self) -> None:
+        self.label.grid_remove()
+
 
 class KeyInputs:
     def __init__(self, window, callback=lambda x: 0, wasd=True):
-        '''
+        """
         Registers keyinputs and sends a callback which has the pressed key char in lowercase
         - callback: currently only sends the character that is being pressed
             - TODO: make event like return type
         - on_wasd=True: Checks if any of 'w,a,s,d' keys are being pressed and sends a callback
-        '''
+        """
         self.window = window
         self.callback = callback
         if wasd:
@@ -967,7 +1038,7 @@ class KeyInputs:
 
 
 App(
-    title='Awesome Card Game v0.3',
+    title='Game Arcade v0.5',
     theme='superhero',
     size=(600, 650),
     logging_level=logging.INFO,

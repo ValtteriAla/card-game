@@ -1,6 +1,6 @@
-# Simple card game using Tkinter as GUI
+# Game Arcade created with Tkinter
 
-Learning classes and tkinter GUI
+Learning classes and tkinter GUI. The game arcade contains two games; Card game and a classic Worm game.
 
 ## Branches
 
@@ -12,6 +12,8 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - Highscore and storing the highscore
 - Balances to * and / operations.
 
+---
+
 ### v0.2
 
 - Added highscore and storing the highscore.
@@ -22,6 +24,8 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - Styled cards depending on what the opeartion is
 - Main window for other games ("Game Arcade") where you can choose a game
 - New game (Worm game) with movement using buttons and keybindings
+
+---
 
 ### v0.3
 
@@ -38,6 +42,8 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - ~~styling could be better~~ later versions
 - Rework worm grow to be dynamic (maybe class implementation)
 - fix small bugs found in the game.py TODO sections
+
+---
 
 ### v0.4
 
@@ -63,4 +69,22 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - 'Try again' button and End game events
 - Speed increases over time or when eating 
 - Visual clarity when growing the worm
+
+---
+
+### V0.5
+
+- Added KeyInputs class to read keyinputs from tkinter
+
+#### Game 2
+
+**Added**:
+- WASD movement
+- Scoring system (integrated the same system used in Game 1)
+- Game now resets after hitting 'Quit'
+- Visual Clarity is now good enough since the game is faster
+
+**Fixed**:
+- Food spawning inside the worm
+
 
