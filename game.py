@@ -409,7 +409,12 @@ class Game2(tb.Frame):
         """
         self.parent = parent
         self.highscore = self.parent.get_highscore('game2')
-        self.game_speed = 0.1
+        self.starting_game_speed = 0.7 # Update rate - Lower is faster
+        self.game_speed = self.starting_game_speed 
+        # How fast game speeds up over time - Lower is faster
+        self.game_speed_multiplier = 0.99
+        self.max_game_speed = 0.05
+
         self.current_highscore = 0
 
         self.board_height = 10
@@ -426,15 +431,36 @@ class Game2(tb.Frame):
         )
         self.back_button.grid(row=0, column=0)
 
-        self.instructions_label = Label(self.frame_top_left, (0, 2), 'Movement: WASD', {'visible': False, 'padding': 20})
+        self.try_again_button = tb.Button(
+        self.frame_top_left, text='Play again', command=self.play_again
+        )
 
-        self.highscore_header_label = Label(self.frame_top_right, (0, 0), 'Highscore: ', {'visible': False, 'padding': '0 20'})
-        self.highscore_label = Label(self.frame_top_right, (0, 1), self.highscore, {'visible': False})
+        self.instructions_label = Label(
+            self.frame_top_left,
+            (0, 2),
+            'Movement: WASD',
+            {'visible': False, 'padding': 20},
+        )
 
-        self.current_score_header_label = Label(self.frame_top_right, (1, 0), 'Score: ', {'visible': False, 'padding': '0 20'})
-        self.current_score_label = Label(self.frame_top_right, (1, 1), self.current_highscore, {'visible': False})
+        self.highscore_header_label = Label(
+            self.frame_top_right,
+            (0, 0),
+            'Highscore: ',
+            {'visible': False, 'padding': '0 20'},
+        )
+        self.highscore_label = Label(
+            self.frame_top_right, (0, 1), self.highscore, {'visible': False}
+        )
 
-
+        self.current_score_header_label = Label(
+            self.frame_top_right,
+            (1, 0),
+            'Score: ',
+            {'visible': False, 'padding': '0 20'},
+        )
+        self.current_score_label = Label(
+            self.frame_top_right, (1, 1), self.current_highscore, {'visible': False}
+        )
 
         """ Movement using buttons
         self.go_right_button = tb.Button(
@@ -569,6 +595,10 @@ class Game2(tb.Frame):
             return False
         else:
             return True
+        
+    def increase_game_speed(self) -> None:
+        if self.game_speed > self.max_game_speed:
+            self.game_speed *= self.game_speed_multiplier
 
     def update_frame(self) -> None:
         self.t = threading.Timer(self.game_speed, self.update_frame)  # type: ignore
@@ -577,6 +607,7 @@ class Game2(tb.Frame):
         info(f'Frame updated, passed time: {self.passed_time}s')
         self.worm.update_position(self.current_movement_dir, self.previous_movement_dir)
         self.game_over()
+        self.increase_game_speed()
 
     def quit_game(self) -> None:
         self.t.cancel()  # type: ignore
@@ -595,7 +626,6 @@ class Game2(tb.Frame):
         self.current_score_label.hidden()
         self.highscore_header_label.hidden()
         self.highscore_label.hidden()
-        
 
     def show(self) -> None:
         self.frame_top_left.grid(column=0, row=0, sticky=NW)
@@ -610,6 +640,13 @@ class Game2(tb.Frame):
         self.spawn_food(test=False)
 
     def play_again(self) -> None:
+        self.try_again_button.grid_remove()
+        self.reset_board()
+        self.worm.reset_worm()
+        self.reset_current_highscore()
+        self.game_speed = self.starting_game_speed
+        self.update_frame()
+        self.spawn_food(test=False)
         info('Play again button pressed')
 
     def set_current_highscore(self) -> None:
@@ -631,11 +668,11 @@ class Game2(tb.Frame):
         first_worm_pos = first_worm.get_position()
         for worm in worms[1:]:
             if worm.get_position() == first_worm_pos:
-                if self.current_highscore > self.highscore: 
+                if self.current_highscore > self.highscore:
                     self.set_current_highscore()
                     self.highscore = self.current_highscore
                     self.highscore_label.change_label(self.highscore)
-
+                self.try_again_button.grid(row=1, column=0, pady=5)
                 info('Game Over')
                 self.t.cancel()
 
