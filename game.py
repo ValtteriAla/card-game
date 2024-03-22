@@ -431,7 +431,7 @@ class Game2(tb.Frame):
         )
         self.back_button.grid(row=0, column=0)
 
-        self.try_again_button = tb.Button(
+        self.play_again_button = tb.Button(
         self.frame_top_left, text='Play again', command=self.play_again
         )
 
@@ -623,6 +623,7 @@ class Game2(tb.Frame):
         self.frame_top_left.grid_remove()
         self.frame_top_right.grid_remove()
         self.instructions_label.hidden()
+        self.play_again_button.grid_remove()
         self.current_score_header_label.hidden()
         self.reset_current_highscore()
         self.current_score_label.hidden()
@@ -642,7 +643,7 @@ class Game2(tb.Frame):
         self.spawn_food(test=False)
 
     def play_again(self) -> None:
-        self.try_again_button.grid_remove()
+        self.play_again_button.grid_remove()
         self.reset_board()
         self.worm.reset_worm()
         self.reset_current_highscore()
@@ -674,7 +675,7 @@ class Game2(tb.Frame):
                     self.set_current_highscore()
                     self.highscore = self.current_highscore
                     self.highscore_label.change_label(self.highscore)
-                self.try_again_button.grid(row=1, column=0, pady=5)
+                self.play_again_button.grid(row=1, column=0, pady=5)
                 info('Game Over')
                 self.t.cancel()
 
