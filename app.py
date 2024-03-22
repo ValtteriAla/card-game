@@ -1,5 +1,6 @@
 import ttkbootstrap as tb  # type: ignore
 from ttkbootstrap.constants import CENTER  # type: ignore
+from ttkbootstrap.constants import NW, NE, N  # type: ignore
 import logging
 from logging import debug, error
 from helperClasses import Label
@@ -51,6 +52,7 @@ class App(tb.Window):
         self.main = Main(self)
         self.game1 = CardGame(self)
         self.game2 = WormGame(self)
+        self.game3 = Game(self)
         self.mainloop()
 
     def get_highscore_path(self) -> str:
@@ -97,6 +99,8 @@ class App(tb.Window):
             self.game1.show()
         elif window == 'game2':
             self.game2.show()
+        elif window == 'game3':
+            self.game3.show()
         elif window == 'main':
             self.main.show()
         else:
@@ -129,18 +133,26 @@ class Main(tb.Frame):
 
         self.game1_button = tb.Button(
             self.frame,
-            text='Game 1',
+            text='Cards',
             padding=5,
             command=lambda: self.on_click_game_button('game1'),
         )
         self.game2_button = tb.Button(
             self.frame,
-            text='Game 2',
+            text='Worm',
             padding=5,
             command=lambda: self.on_click_game_button('game2'),
         )
+        self.game3_button = tb.Button(
+            self.frame,
+            text='Game 3',
+            padding=5,
+            command=lambda: self.on_click_game_button('game3'),
+        )
+       
         self.game1_button.grid(row=1, column=0, padx=20, pady=20)
         self.game2_button.grid(row=1, column=1, padx=20, pady=20)
+        self.game3_button.grid(row=1, column=2, padx=20, pady=20)
 
     def on_click_game_button(self, game: str) -> None:
         debug(f'onclick game_button: {game}')
@@ -157,8 +169,45 @@ class Main(tb.Frame):
         self.header.grid(column=0, row=0)
 
 
+class Game(tb.Frame):
+    def __init__(self, parent,) -> None:
+        """
+        # Game 3 window
+        Window is hidden by default. Can be initialized by using show() and hidden by using hide()
+        ## Description
+        """
+        self.parent = parent
+
+        self.highscore = self.parent.get_highscore('game1')
+
+        self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
+        self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
+        self.frame = tb.Frame(self.parent, padding=0, width=2)
+        self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
+
+        self.back_button = tb.Button(
+            self.frame_top_left, text='Quit', command=lambda: self.quit_game()
+        )
+        self.back_button.grid(row=0, column=0)
+
+    def quit_game(self) -> None:
+        self.hide()
+        self.parent.change_window('main')
+
+    def hide(self) -> None:
+        self.frame.grid_remove()
+        self.frame_cards.grid_remove()
+        self.frame_top_left.grid_remove()
+        self.frame_top_right.grid_remove()
+
+    def show(self) -> None:
+        self.frame_top_left.grid(column=0, row=0, sticky=NW)
+        self.frame_top_right.grid(column=0, row=0, sticky=NE)
+        self.frame.grid(column=0, row=1, sticky=N)
+        self.frame_cards.grid(column=0, row=2, sticky=N)
+
 App(
-    title='Game Arcade v0.5',
+    title='Game Arcade v0.6',
     theme='superhero',
     size=(600, 650),
     logging_level=logging.INFO,
