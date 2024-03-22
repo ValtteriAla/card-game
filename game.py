@@ -595,7 +595,9 @@ class Game2(tb.Frame):
             return False
         else:
             return True
-        
+    
+    # Exponential since update_frame also increases
+    # Need to have another timer for linear increase or math out from current game_speed
     def increase_game_speed(self) -> None:
         if self.game_speed > self.max_game_speed:
             self.game_speed *= self.game_speed_multiplier
