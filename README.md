@@ -83,6 +83,8 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 - Scoring system (integrated the same system used in Game 1)
 - Game now resets after hitting 'Quit'
 - Visual Clarity is now good enough since the game is faster
+- Game speed now increases exponentially over time
+- Play again button
 
 **Fixed**:
 - Food spawning inside the worm
