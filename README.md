@@ -61,7 +61,7 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 
 #### TODO for v0.5:
 
-- Plan for general stylings 
+- ~~Plan for general stylings~~ - First functionalities then stylings
 
 ##### Game 2
 
@@ -72,7 +72,7 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 
 ---
 
-### V0.5
+### v0.5
 
 - Added KeyInputs class to read keyinputs from tkinter
 
@@ -88,5 +88,39 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 
 **Fixed**:
 - Food spawning inside the worm
+
+#### TODO for v0.6:
+
+**Game 2 - Nice to have**
+- Game options:
+    - Linear gamespeed, speed rate grow, starting speed
+    - Borders
+    - Multiple foods spawns
+    - Foods that reduce speed or size
+
+**Game 3 - Ideas & plannings**:
+
+Games:
+
+- Sidescroller
+- Mario
+- Mouse location based game
+- pacman
+- asteroid
+
+Applications:
+
+- paint
+- weather app
+
+---
+
+### v0.6
+
+- Cleaned up v0.5 prints and comments
+- Separated Games and Tkinter custom classes to their own files
+
+**Added**
+- Game3/App template
 
 
