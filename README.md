@@ -103,15 +103,20 @@ Game that has 4 cards (buttons) and the goal is to get the target score 0. Each 
 Games:
 
 - Sidescroller
+    - One button game, or can add/decrease speed with left+right
 - Mario
+    - this generally needs graphics in order to look good
 - Mouse location based game
+    - Keep the mouse away from the monsters
 - pacman
+    - similar enough to worm game with added mechanics
 - asteroid
+    - Might need better handling of the frameupdates
 
 Applications:
 
-- paint
-- weather app
+- paint (interesting to code atleast)
+- weather app (has requests, handling data)
 
 ---
 
@@ -122,5 +127,7 @@ Applications:
 
 **Added**
 - Game3/App template
+- On closing event - Confirmation on quit
+    - (Worm game throwed errors because the threading was not stopped before exiting)
 
 

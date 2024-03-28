@@ -4,6 +4,8 @@ from ttkbootstrap.constants import NW, NE, N  # type: ignore
 from helperClasses import KeyInputs, Label
 from logging import debug, info
 from random import choice
+from tkinter import messagebox
+
 
 class Game(tb.Frame):
     def __init__(self, parent) -> None:
@@ -15,6 +17,7 @@ class Game(tb.Frame):
         Game ends when player collides with itself
         """
         self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.highscore = self.parent.get_highscore('game2')
         self.starting_game_speed = 0.7  # Update rate - Lower is faster
         self.game_speed = self.starting_game_speed
@@ -91,6 +94,15 @@ class Game(tb.Frame):
                 )
                 board.append(column_label)
         return board
+    
+    def on_closing(self) -> None:
+        if self.t:
+            self.t.cancel()
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.parent.destroy()
+        else:
+            if self.t:
+                self.update_frame()
 
     def reset_board(self) -> None:
         for label in self.board:

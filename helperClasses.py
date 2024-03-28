@@ -4,6 +4,7 @@ from random import randint, choice
 from logging import debug, info
 from typing import Callable
 
+
 class Label(tb.Frame):
     def __init__(
         self, parent, row_and_column: tuple, text: str, customizations=None
@@ -13,7 +14,7 @@ class Label(tb.Frame):
         ### Parameters:
         - row_and_column: tuple with row and column values - (0, 0)
         - text: What is shown in the label
-        - customizations: {'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20), 'padding': 0, 'visible': True}
+        - customizations: {'class': None, 'sticky': None, 'columnspan': 1, 'justify': 'left', 'font': ('Arial', 20), 'padding': 0, 'visible': True}
         """
         super().__init__(parent)
 
@@ -24,6 +25,7 @@ class Label(tb.Frame):
             'font': ('Arial', 20),
             'padding': 0,
             'visible': True,
+            'class': None,
         }
 
         if customizations is not None:
@@ -36,12 +38,20 @@ class Label(tb.Frame):
         font = default_customizations['font']
         padding = default_customizations['padding']
         visible = default_customizations['visible']
+        self.class_name = default_customizations['class']
 
         self.row, self.col = row_and_column
 
         self.label = tb.Label(
-            parent, text=text, justify=justify, font=font, padding=padding
+            parent,
+            text=text,
+            justify=justify,
+            font=font,
+            padding=padding,
+            style=self.class_name,
         )
+
+
 
         if visible:
             self.label.grid(
@@ -68,6 +78,10 @@ class Label(tb.Frame):
     def hidden(self) -> None:
         self.label.grid_remove()
 
+    def get_label(self) -> tb.Label:
+        return self.label
+    def get_class(self) -> str:
+        return self.class_name
 
 class KeyInputs:
     def __init__(self, window, callback=lambda x: 0, wasd=True):
@@ -85,7 +99,6 @@ class KeyInputs:
     def on_wasd(self, event) -> None:
         if event.char in ['W', 'A', 'S', 'D', 'w', 'a', 's', 'd']:
             self.callback(event.char.lower())
-
 
 
 class Card:
@@ -243,5 +256,3 @@ class CardButton(tb.Frame):
 
         self.button.configure(text=text, bootstyle=style)
         debug(f'Card style is now: {style}')
-
-

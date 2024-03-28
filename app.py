@@ -1,14 +1,13 @@
+from cgitb import text
+import os
+import json
+import logging
 import ttkbootstrap as tb  # type: ignore
+
 from ttkbootstrap.constants import CENTER  # type: ignore
 from ttkbootstrap.constants import NW, NE, N  # type: ignore
-import logging
 from logging import debug, error
 from helperClasses import Label
-
-import json
-
-import os
-
 from wormGame import Game as WormGame
 from cardGame import Game as CardGame
 
@@ -28,7 +27,7 @@ class App(tb.Window):
         - size: x and y dimensions of the window. This is also the minimum size
         - target_score: score that ends the game
         - starting_score: starting point at the start of the game
-        - theme: your custom theme or one of the above:\n
+        - theme: your custom theme or:\n
                   'cosmo', 'flatly', 'litera',\n
                   'minty', 'lumen', 'sandstone', 'yeti',\n
                   'pulse', 'united', 'morph', 'journal',\n
@@ -149,7 +148,7 @@ class Main(tb.Frame):
             padding=5,
             command=lambda: self.on_click_game_button('game3'),
         )
-       
+
         self.game1_button.grid(row=1, column=0, padx=20, pady=20)
         self.game2_button.grid(row=1, column=1, padx=20, pady=20)
         self.game3_button.grid(row=1, column=2, padx=20, pady=20)
@@ -170,25 +169,64 @@ class Main(tb.Frame):
 
 
 class Game(tb.Frame):
-    def __init__(self, parent,) -> None:
+    def __init__(
+        self,
+        parent,
+    ) -> None:
         """
         # Game 3 window
         Window is hidden by default. Can be initialized by using show() and hidden by using hide()
         ## Description
         """
+
         self.parent = parent
 
-        self.highscore = self.parent.get_highscore('game1')
+        self.mouse_position = [0, 0]
 
-        self.frame_top_left = tb.Frame(self.parent, padding=0, width=0)
-        self.frame_top_right = tb.Frame(self.parent, padding=0, width=0)
-        self.frame = tb.Frame(self.parent, padding=0, width=2)
-        self.frame_cards = tb.Frame(self.parent, padding=0, width=2)
+        self.parent.event_generate('<Configure>')
+
+        self.is_visible = False
+        self.highscore = self.parent.get_highscore('game3')
+
+        self.frame_top_left = tb.Frame(self.parent, padding=10, width=50)
+        self.frame_top_right = tb.Frame(self.parent, padding=10, width=50)
+        self.frame = tb.Frame(self.parent, padding=0, width=0)
+        self.board = self.init_board()
 
         self.back_button = tb.Button(
             self.frame_top_left, text='Quit', command=lambda: self.quit_game()
         )
         self.back_button.grid(row=0, column=0)
+
+    def init_board(self) -> list:
+        board = []
+        for row in range(10):
+            for col in range(10):
+                self.parent.style.configure(
+                    f'{row}-{col}-BW.TLabel', foreground='white'
+                )
+                label = Label(
+                    self.frame,
+                    (row, col),
+                    text='[]',
+                    customizations={
+                        'font': ('Arial', 20),
+                        'class': f'{row}-{col}-BW.TLabel',
+                        'padding': 0
+                    },
+                )
+
+                label.get_label().bind('<Enter>', self.on_enter_cell)
+                board.append(label)
+        return board
+
+    def on_enter_cell(self, event) -> None:
+        for label in self.board:
+            x,y = label.get_row_and_column()
+
+            if x == event.x and y == event.y:
+                print(label.get_class())
+                self.parent.style.configure(label.get_class(), foreground='blue')
 
     def quit_game(self) -> None:
         self.hide()
@@ -196,15 +234,39 @@ class Game(tb.Frame):
 
     def hide(self) -> None:
         self.frame.grid_remove()
-        self.frame_cards.grid_remove()
         self.frame_top_left.grid_remove()
         self.frame_top_right.grid_remove()
+        self.is_visible = False
 
     def show(self) -> None:
-        self.frame_top_left.grid(column=0, row=0, sticky=NW)
+        self.frame_top_left.grid(column=0, row=0, padx=20, pady=20, sticky=NW)
         self.frame_top_right.grid(column=0, row=0, sticky=NE)
-        self.frame.grid(column=0, row=1, sticky=N)
-        self.frame_cards.grid(column=0, row=2, sticky=N)
+        self.frame.grid(column=1, row=2, sticky=N)
+        self.init_board()
+        self.is_visible = True
+
+
+"""
+    def motion(self, event):
+        if self.is_visible:
+            x, y = event.x, event.y
+            self.mouse_position[0] = x
+            self.mouse_position[1] = y
+            print('{}, {}'.format(x, y))
+            #self.test_button.invoke()
+            self.change_color()
+"""
+"""
+    def change_color(self) -> None:
+
+        for label in self.board:
+            x,y = label.get_row_and_column()
+
+            if x == self.mouse_position[0] and y == self.mouse_position[1]:
+                print("Changed color")
+                self.parent.style.configure(f'{x}-{y}-BW.TLabel', foreground="blue")
+                break
+  """
 
 App(
     title='Game Arcade v0.6',
