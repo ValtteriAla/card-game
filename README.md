@@ -124,6 +124,7 @@ Applications:
 
 - Cleaned up v0.5 prints and comments
 - Separated Games and Tkinter custom classes to their own files
+- Discovered: can't get mouse location based games work using binding `<Enter>`, instead need to use buttons.
 
 **Added**
 - Game3/App template

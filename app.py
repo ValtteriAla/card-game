@@ -1,8 +1,8 @@
-from cgitb import text
 import os
 import json
 import logging
 import ttkbootstrap as tb  # type: ignore
+import time
 
 from ttkbootstrap.constants import CENTER  # type: ignore
 from ttkbootstrap.constants import NW, NE, N  # type: ignore
@@ -183,14 +183,14 @@ class Game(tb.Frame):
 
         self.mouse_position = [0, 0]
 
-        self.parent.event_generate('<Configure>')
+        #self.parent.event_generate('<Configure>')
 
         self.is_visible = False
         self.highscore = self.parent.get_highscore('game3')
 
         self.frame_top_left = tb.Frame(self.parent, padding=10, width=50)
         self.frame_top_right = tb.Frame(self.parent, padding=10, width=50)
-        self.frame = tb.Frame(self.parent, padding=0, width=0)
+        self.frame = tb.Frame(self.parent, padding=10, width=50)
         self.board = self.init_board()
 
         self.back_button = tb.Button(
@@ -200,33 +200,30 @@ class Game(tb.Frame):
 
     def init_board(self) -> list:
         board = []
-        for row in range(10):
-            for col in range(10):
+        for row in range(20):
+            for col in range(20):
                 self.parent.style.configure(
-                    f'{row}-{col}-BW.TLabel', foreground='white'
+                    f'{row}-{col}-BW.TLabel', foreground='white', background="black",
                 )
                 label = Label(
                     self.frame,
-                    (row, col),
-                    text='[]',
+                    row_and_column=(row, col),
+                    text='',
                     customizations={
                         'font': ('Arial', 20),
                         'class': f'{row}-{col}-BW.TLabel',
-                        'padding': 0
+                        'padding': "0 -8",
+                        'on_hover': self.on_enter_cell,
+                        'width': 1,
                     },
                 )
-
-                label.get_label().bind('<Enter>', self.on_enter_cell)
                 board.append(label)
         return board
 
-    def on_enter_cell(self, event) -> None:
-        for label in self.board:
-            x,y = label.get_row_and_column()
+    def on_enter_cell(self, cell) -> None:
+        print(cell)
 
-            if x == event.x and y == event.y:
-                print(label.get_class())
-                self.parent.style.configure(label.get_class(), foreground='blue')
+        self.parent.style.configure(cell.get_class(), background='brown')
 
     def quit_game(self) -> None:
         self.hide()
@@ -242,31 +239,14 @@ class Game(tb.Frame):
         self.frame_top_left.grid(column=0, row=0, padx=20, pady=20, sticky=NW)
         self.frame_top_right.grid(column=0, row=0, sticky=NE)
         self.frame.grid(column=1, row=2, sticky=N)
-        self.init_board()
         self.is_visible = True
 
-
-"""
-    def motion(self, event):
-        if self.is_visible:
-            x, y = event.x, event.y
-            self.mouse_position[0] = x
-            self.mouse_position[1] = y
-            print('{}, {}'.format(x, y))
-            #self.test_button.invoke()
-            self.change_color()
-"""
-"""
-    def change_color(self) -> None:
-
-        for label in self.board:
-            x,y = label.get_row_and_column()
-
-            if x == self.mouse_position[0] and y == self.mouse_position[1]:
-                print("Changed color")
-                self.parent.style.configure(f'{x}-{y}-BW.TLabel', foreground="blue")
-                break
-  """
+'''
+class Asteroid(tb.frame):
+        def __init__(self, parent, motion_vector) -> None:
+            self.parent = parent
+            self.motion = motion_vector
+'''
 
 App(
     title='Game Arcade v0.6',

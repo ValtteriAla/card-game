@@ -26,6 +26,8 @@ class Label(tb.Frame):
             'padding': 0,
             'visible': True,
             'class': None,
+            'on_hover': lambda x: 0,
+            'width': None,
         }
 
         if customizations is not None:
@@ -38,7 +40,9 @@ class Label(tb.Frame):
         font = default_customizations['font']
         padding = default_customizations['padding']
         visible = default_customizations['visible']
+        width = default_customizations['width']
         self.class_name = default_customizations['class']
+        self.on_hover_binding = default_customizations['on_hover']
 
         self.row, self.col = row_and_column
 
@@ -49,9 +53,10 @@ class Label(tb.Frame):
             font=font,
             padding=padding,
             style=self.class_name,
+            width=width,
         )
 
-
+        self.label.bind('<Enter>', self.on_hover)
 
         if visible:
             self.label.grid(
@@ -66,6 +71,9 @@ class Label(tb.Frame):
 
     def get_row_and_column(self) -> tuple:
         return (self.row, self.col)
+    
+    def on_hover(self, e) -> None:
+        self.on_hover_binding(self)
 
     def change_label(self, text: str) -> None:
         self.label.configure(text=text)
