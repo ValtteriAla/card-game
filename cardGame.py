@@ -4,6 +4,7 @@ import ttkbootstrap as tb  # type: ignore
 from helperClasses import Label, Card, CardButton
 from ttkbootstrap.constants import NW, NE, N  # type: ignore
 
+
 class Game(tb.Frame):
     def __init__(
         self, parent, starting_score=100, target_score=0, max_highscore=100
@@ -69,7 +70,14 @@ class Game(tb.Frame):
         else:
             return 'custom.Primary.TButton'
 
-    def init_card(self, frame, row=0, column=0, card_type='addition', card_index=0):
+    def init_card(
+        self,
+        frame,
+        row=0,
+        column=0,
+        card_type='addition',
+        card_index=0,
+    ) -> CardButton:
         return CardButton(
             frame,
             (row, column),
@@ -151,7 +159,11 @@ class Game(tb.Frame):
         self.card4.enable()
 
     def set_current_score(self, value: int) -> None:
+        """
+        Max/Min score is starting_score & -starting_score
+        """
         starting_score = self.starting_score
+
         if value > starting_score:
             self.current_score = starting_score
         elif value < starting_score * -1:
@@ -177,6 +189,8 @@ class Game(tb.Frame):
         card_obj = card.get_card()
         card_value = card_obj['value']
         card_index = card_obj['index']
+
+        # Do calculation based on the card's operation
         if card.operator == '+':
             debug(
                 f'Addition -> round(current_score+card_value, 1) = {
@@ -211,6 +225,7 @@ class Game(tb.Frame):
             )
             self.set_current_score(math.floor(current_score))
 
+        # Reset the card that was pressed
         if card_index == 0:
             self.reinit_card(self.card1)
             debug(f'Card 1 is now: {self.card1.get_card().get_card_text()}')
@@ -241,4 +256,3 @@ class Game(tb.Frame):
                 self.highscore_label.change_label(
                     f'Highscore: {self.current_highscore}'
                 )
-

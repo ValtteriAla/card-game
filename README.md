@@ -131,4 +131,3 @@ Applications:
 - On closing event - Confirmation on quit
     - (Worm game throwed errors because the threading was not stopped before exiting)
 
-

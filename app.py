@@ -3,6 +3,7 @@ import json
 import logging
 import ttkbootstrap as tb  # type: ignore
 import time
+import threading
 
 from ttkbootstrap.constants import CENTER  # type: ignore
 from ttkbootstrap.constants import NW, NE, N  # type: ignore
@@ -183,7 +184,7 @@ class Game(tb.Frame):
 
         self.mouse_position = [0, 0]
 
-        #self.parent.event_generate('<Configure>')
+        # self.parent.event_generate('<Configure>')
 
         self.is_visible = False
         self.highscore = self.parent.get_highscore('game3')
@@ -198,12 +199,53 @@ class Game(tb.Frame):
         )
         self.back_button.grid(row=0, column=0)
 
+        self.rains = []
+
+        for i in range(15):
+            self.rains.append([0, i])
+
+        self.t = None
+
+    def update_rain(self):
+        self.t = threading.Timer(5.0, self.update_rain)  # type: ignore
+        self.t.start()  # type: ignore
+        print('Update rain')
+
+        tiles_to_be_updated = []
+        for rain in self.rains:
+            # tiles_to_be_updated.append(rain)
+            rain[0] += 1
+            tiles_to_be_updated.append(rain)
+        self.update_board(tiles_to_be_updated)
+
+    def update_board(self, updated_tiles):
+        for updated_tile in updated_tiles:
+            for tile in self.board:
+                position = tile.get_row_and_column()
+                if position[0] == updated_tile[0] and position[1] == updated_tile[1]:
+                    for tile2 in self.board:
+                        tile2_coords = tile2.get_row_and_column()
+                        if (
+                            tile2_coords[0] == updated_tile[0] - 1
+                            and tile2_coords[1] == updated_tile[1]
+                        ):
+                            self.parent.style.configure(
+                                tile2.get_class(), background='black'
+                            )
+                            break
+                    self.parent.style.configure(tile.get_class(), background='brown')
+                    break
+
+        pass
+
     def init_board(self) -> list:
         board = []
         for row in range(20):
             for col in range(20):
                 self.parent.style.configure(
-                    f'{row}-{col}-BW.TLabel', foreground='white', background="black",
+                    f'{row}-{col}-BW.TLabel',
+                    foreground='white',
+                    background='black',
                 )
                 label = Label(
                     self.frame,
@@ -212,8 +254,8 @@ class Game(tb.Frame):
                     customizations={
                         'font': ('Arial', 20),
                         'class': f'{row}-{col}-BW.TLabel',
-                        'padding': "0 -8",
-                        'on_hover': self.on_enter_cell,
+                        'padding': '0 -8',
+                        #'on_hover': self.on_enter_cell,
                         'width': 1,
                     },
                 )
@@ -240,13 +282,24 @@ class Game(tb.Frame):
         self.frame_top_right.grid(column=0, row=0, sticky=NE)
         self.frame.grid(column=1, row=2, sticky=N)
         self.is_visible = True
+        self.update_rain()
 
-'''
+
+"""
+    class Rain():
+        def __init__(self, frame: tb.Frame, row_and_column: tuple) -> None:
+            self.row = row_and_column[0]
+            self.column = row_and_column[1]
+            self.frame = frame
+            .grid(self.frame, self.row, self.column)
+            pass
+"""
+"""
 class Asteroid(tb.frame):
         def __init__(self, parent, motion_vector) -> None:
             self.parent = parent
             self.motion = motion_vector
-'''
+"""
 
 App(
     title='Game Arcade v0.6',

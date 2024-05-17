@@ -17,7 +17,7 @@ class Game(tb.Frame):
         Game ends when player collides with itself
         """
         self.parent = parent
-        self.parent.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.parent.protocol('WM_DELETE_WINDOW', self.on_closing)
         self.highscore = self.parent.get_highscore('game2')
         self.starting_game_speed = 0.7  # Update rate - Lower is faster
         self.game_speed = self.starting_game_speed
@@ -94,11 +94,11 @@ class Game(tb.Frame):
                 )
                 board.append(column_label)
         return board
-    
+
     def on_closing(self) -> None:
         if self.t:
             self.t.cancel()
-        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        if messagebox.askokcancel('Quit', 'Do you want to quit?'):
             self.parent.destroy()
         else:
             if self.t:
@@ -131,9 +131,11 @@ class Game(tb.Frame):
                     self.food_position = [5, 0]
                     break
             return
-        free_spots = []
 
+        free_spots = []
         occupied_spots = []
+
+        # Occupied spots are the worms locations
         for worm in self.worm.get_worm():
             occupied_spots.append(worm.get_position())
 
@@ -156,12 +158,10 @@ class Game(tb.Frame):
         debug(f'FOOD POS:{self.food_position}')
 
     def set_movement_direction(self, direction: str) -> None:
+        # Problems arise when keyinputs are ahead of the movement.
         is_valid_movement = self.check_valid_movement(direction)
         if not is_valid_movement or not self.worm_moved_since_previous_update:
-            debug(
-                f'Invalid movement:{
-                  self.current_movement_dir} -> {direction}',
-            )
+            debug(f'Invalid movement:{self.current_movement_dir} -> {direction}')
         if (
             self.current_movement_dir != direction
             and is_valid_movement

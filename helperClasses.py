@@ -72,6 +72,7 @@ class Label(tb.Frame):
     def get_row_and_column(self) -> tuple:
         return (self.row, self.col)
     
+    # Is this correct?
     def on_hover(self, e) -> None:
         self.on_hover_binding(self)
 
